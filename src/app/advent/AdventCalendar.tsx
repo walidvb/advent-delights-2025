@@ -5,18 +5,29 @@ import { Header } from './Header';
 import { CalendarGrid } from './CalendarGrid';
 import { DetailsCard } from './DetailsCard';
 import { Player } from './Player';
-import { TRACKS } from './data';
 import { Track } from './types';
 import { useAdventDay } from './AdventDayContext';
 
-export function AdventCalendar() {
+interface AdventCalendarProps {
+  tracks: Track[];
+}
+
+export function AdventCalendar({ tracks }: AdventCalendarProps) {
   const { revealedIndices, addRevealedIndex } = useAdventDay();
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hoveredTrack, setHoveredTrack] = useState<Track | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
-  const revealedSet = useMemo(() => new Set(revealedIndices), [revealedIndices]);
+  const revealedSet = useMemo(
+    () => new Set(revealedIndices),
+    [revealedIndices]
+  );
+
+  // Sort revealed indices to navigate through them in order
+  const sortedRevealedIndices = useMemo(() => {
+    return [...revealedIndices].sort((a, b) => a - b);
+  }, [revealedIndices]);
 
   const handleReveal = useCallback(
     (index: number) => {
@@ -43,25 +54,45 @@ export function AdventCalendar() {
   }, [isPlaying]);
 
   const handleNext = useCallback(() => {
-    if (playingIndex === null) return;
-    const nextIndex = playingIndex < 24 ? playingIndex + 1 : 0;
-    setPlayingIndex(nextIndex);
+    if (playingIndex === null || sortedRevealedIndices.length === 0) return;
+
+    const currentPos = sortedRevealedIndices.indexOf(playingIndex);
+    if (currentPos === -1) {
+      // If current playing track is somehow not in revealed list (shouldn't happen normally if we only play revealed),
+      // just go to the first revealed.
+      // However, handlePlay adds it to revealed, so it should be there.
+      setPlayingIndex(sortedRevealedIndices[0]);
+    } else {
+      const nextPos = (currentPos + 1) % sortedRevealedIndices.length;
+      setPlayingIndex(sortedRevealedIndices[nextPos]);
+    }
     setIsPlaying(true);
-  }, [playingIndex]);
+  }, [playingIndex, sortedRevealedIndices]);
 
   const handlePrevious = useCallback(() => {
-    if (playingIndex === null) return;
-    const prevIndex = playingIndex > 0 ? playingIndex - 1 : 24;
-    setPlayingIndex(prevIndex);
-    setIsPlaying(true);
-  }, [playingIndex]);
+    if (playingIndex === null || sortedRevealedIndices.length === 0) return;
 
-  const handleHover = useCallback((track: Track | null, event: React.MouseEvent | null) => {
-    setHoveredTrack(track);
-    if (event) {
-      setMousePosition({ x: event.clientX, y: event.clientY });
+    const currentPos = sortedRevealedIndices.indexOf(playingIndex);
+    if (currentPos === -1) {
+      setPlayingIndex(sortedRevealedIndices[sortedRevealedIndices.length - 1]);
+    } else {
+      const prevPos =
+        (currentPos - 1 + sortedRevealedIndices.length) %
+        sortedRevealedIndices.length;
+      setPlayingIndex(sortedRevealedIndices[prevPos]);
     }
-  }, []);
+    setIsPlaying(true);
+  }, [playingIndex, sortedRevealedIndices]);
+
+  const handleHover = useCallback(
+    (track: Track | null, event: React.MouseEvent | null) => {
+      setHoveredTrack(track);
+      if (event) {
+        setMousePosition({ x: event.clientX, y: event.clientY });
+      }
+    },
+    []
+  );
 
   const handleDetailsPlay = useCallback(() => {
     if (hoveredTrack) {
@@ -69,13 +100,16 @@ export function AdventCalendar() {
     }
   }, [hoveredTrack, handlePlay]);
 
-  const currentTrack = playingIndex !== null ? TRACKS.find((t) => t.dayIndex === playingIndex) || null : null;
+  const currentTrack =
+    playingIndex !== null
+      ? tracks.find((t) => t.dayIndex === playingIndex) || null
+      : null;
 
   return (
     <div className="min-h-screen bg-white pb-24">
       <Header />
       <CalendarGrid
-        tracks={TRACKS}
+        tracks={tracks}
         revealedIndices={revealedSet}
         playingIndex={playingIndex}
         onReveal={handleReveal}
