@@ -1,7 +1,6 @@
 'use client';
 
 import { motion, AnimatePresence } from 'motion/react';
-import Image from 'next/image';
 import { useMemo, useState } from 'react';
 import { useAdventDay } from './AdventDayContext';
 import { Track } from './types';
@@ -31,13 +30,19 @@ export function CalendarCard({
   onPlay,
   onHover,
 }: CalendarCardProps) {
-  const { currentDayIndex } = useAdventDay();
+  const { currentDayIndex, variant } = useAdventDay();
   const isInactive = track.dayIndex > currentDayIndex;
   const isUnrevealed = !isInactive && !isRevealed;
   const [isHovered, setIsHovered] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
 
-  const maskPosition = useMemo(() => generateMaskPosition(track.dayIndex + 1), [track.dayIndex]);
+  const coverImage =
+    variant === 'light' ? track.lightCoverImage : track.heavyCoverImage;
+
+  const maskPosition = useMemo(
+    () => generateMaskPosition(track.dayIndex + 1),
+    [track.dayIndex]
+  );
 
   const handleClick = () => {
     if (isInactive) return;
@@ -93,24 +98,32 @@ export function CalendarCard({
           filter: isInactive ? 'grayscale(100%) opacity(0.3)' : 'none',
         }}
       >
-        <Image
-          src={track.coverImage}
+        <img
+          src={coverImage}
           alt={`Day ${track.dayIndex + 1}`}
-          fill
-          className="object-cover transition-all duration-500"
+          className="absolute inset-0 w-full h-full object-cover transition-all duration-500"
           style={{
-            filter: isUnrevealed && !isRevealing ? 'blur(20px)' : 'blur(0px)',
+            filter: isUnrevealed && !isRevealing ? 'blur(0px)' : 'blur(0px)',
             WebkitMaskImage: isUnrevealed
-              ? `radial-gradient(circle at ${maskPosition.x}% ${maskPosition.y}%, black 0%, black ${getMaskSize() * 0.5}%, transparent ${getMaskSize()}%)`
+              ? `radial-gradient(circle at ${maskPosition.x}% ${
+                  maskPosition.y
+                }%, black 0%, black ${
+                  getMaskSize() * 0.5
+                }%, transparent ${getMaskSize()}%)`
               : undefined,
             maskImage: isUnrevealed
-              ? `radial-gradient(circle at ${maskPosition.x}% ${maskPosition.y}%, black 0%, black ${getMaskSize() * 0.5}%, transparent ${getMaskSize()}%)`
+              ? `radial-gradient(circle at ${maskPosition.x}% ${
+                  maskPosition.y
+                }%, black 0%, black ${
+                  getMaskSize() * 0.5
+                }%, transparent ${getMaskSize()}%)`
               : undefined,
-            transition: 'mask-image 0.6s ease-out, -webkit-mask-image 0.6s ease-out, filter 0.5s ease-out',
+            transition:
+              'mask-image 0.6s ease-out, -webkit-mask-image 0.6s ease-out, filter 0.5s ease-out',
           }}
         />
 
-        <AnimatePresence>
+        {/* <AnimatePresence>
           {isUnrevealed && !isRevealing && (
             <motion.div
               className="absolute inset-0 flex items-center justify-center"
@@ -118,8 +131,8 @@ export function CalendarCard({
               exit={{ opacity: 0, scale: 1.2 }}
               transition={{ duration: 0.3 }}
             >
-              <Image
-                src={track.coverImage}
+              <img
+                src={coverImage}
                 alt=""
                 width={80}
                 height={80}
@@ -127,7 +140,7 @@ export function CalendarCard({
               />
             </motion.div>
           )}
-        </AnimatePresence>
+        </AnimatePresence> */}
       </motion.div>
 
       <AnimatePresence>

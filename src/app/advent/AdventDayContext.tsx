@@ -3,19 +3,25 @@
 import { createContext, useContext, useMemo, useState, type ReactNode, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
 import { useLocalStorage } from 'react-use';
+import { TrackVariant } from './types';
 
 interface AdventDayContextValue {
   currentDayIndex: number;
   setCurrentDayIndex: (index: number) => void;
   resetDayIndex: () => void;
+  variant: TrackVariant;
+  setVariant: (variant: TrackVariant) => void;
   revealedIndices: number[];
   addRevealedIndex: (index: number) => void;
   resetRevealedIndices: () => void;
 }
 
-const AdventDayContext = createContext<AdventDayContextValue | undefined>(undefined);
+const AdventDayContext = createContext<AdventDayContextValue | undefined>(
+  undefined
+);
 
-const clampDayIndex = (index: number) => Math.min(24, Math.max(0, Math.round(index)));
+const clampDayIndex = (index: number) =>
+  Math.min(24, Math.max(0, Math.round(index)));
 const getDefaultDayIndex = () => clampDayIndex(new Date().getDate() - 1);
 
 interface AdventDayProviderProps {
@@ -24,9 +30,27 @@ interface AdventDayProviderProps {
 
 export function AdventDayProvider({ children }: AdventDayProviderProps) {
   const [currentDayIndex, setCurrentDayIndexState] = useState<number>(0);
-  const [revealedIndices, setRevealedIndices] = useLocalStorage<number[]>('advent-revealed-indices', []);
+  const [variant, setVariant] = useState<TrackVariant>('light');
+  const [revealedIndicesMap, setRevealedIndicesMap] = useLocalStorage<
+    Record<TrackVariant, number[]>
+  >('advent-revealed-map', {
+    light: [],
+    heavy: [],
+  });
 
-  const normalizedRevealedIndices = useMemo(() => (Array.isArray(revealedIndices) ? revealedIndices : []), [revealedIndices]);
+  // Ensure map structure exists (for backward compatibility or first run)
+  const normalizedMap = useMemo(() => {
+    return {
+      light: Array.isArray(revealedIndicesMap?.light)
+        ? revealedIndicesMap.light
+        : [],
+      heavy: Array.isArray(revealedIndicesMap?.heavy)
+        ? revealedIndicesMap.heavy
+        : [],
+    };
+  }, [revealedIndicesMap]);
+
+  const revealedIndices = normalizedMap[variant];
 
   const setCurrentDayIndex = (index: number) => {
     setCurrentDayIndexState(clampDayIndex(index));
@@ -38,27 +62,41 @@ export function AdventDayProvider({ children }: AdventDayProviderProps) {
 
   const addRevealedIndex = useCallback(
     (index: number) => {
-      if (!normalizedRevealedIndices.includes(index)) {
-        setRevealedIndices([...normalizedRevealedIndices, index]);
+      if (!revealedIndices.includes(index)) {
+        setRevealedIndicesMap({
+          ...normalizedMap,
+          [variant]: [...revealedIndices, index],
+        });
       }
     },
-    [normalizedRevealedIndices, setRevealedIndices]
+    [normalizedMap, revealedIndices, variant, setRevealedIndicesMap]
   );
 
   const resetRevealedIndices = useCallback(() => {
-    setRevealedIndices([]);
-  }, [setRevealedIndices]);
+    setRevealedIndicesMap({
+      ...normalizedMap,
+      [variant]: [],
+    });
+  }, [normalizedMap, variant, setRevealedIndicesMap]);
 
   const value = useMemo(
     () => ({
       currentDayIndex,
       setCurrentDayIndex,
       resetDayIndex,
-      revealedIndices: normalizedRevealedIndices,
+      variant,
+      setVariant,
+      revealedIndices,
       addRevealedIndex,
       resetRevealedIndices,
     }),
-    [currentDayIndex, normalizedRevealedIndices, addRevealedIndex, resetRevealedIndices]
+    [
+      currentDayIndex,
+      variant,
+      revealedIndices,
+      addRevealedIndex,
+      resetRevealedIndices,
+    ]
   );
 
   return (

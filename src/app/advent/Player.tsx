@@ -1,9 +1,9 @@
 'use client';
 
 import { useRef, useState, useCallback } from 'react';
-import Image from 'next/image';
 import { Track } from './types';
 import ReactPlayer from 'react-player';
+import { useAdventDay } from './AdventDayContext';
 
 interface PlayerProps {
   track: Track | null;
@@ -13,7 +13,14 @@ interface PlayerProps {
   onPrevious: () => void;
 }
 
-export function Player({ track, isPlaying, onPlayPause, onNext, onPrevious }: PlayerProps) {
+export function Player({
+  track,
+  isPlaying,
+  onPlayPause,
+  onNext,
+  onPrevious,
+}: PlayerProps) {
+  const { variant } = useAdventDay();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const playerRef = useRef<any>(null);
   const [progress, setProgress] = useState(0);
@@ -25,6 +32,27 @@ export function Player({ track, isPlaying, onPlayPause, onNext, onPrevious }: Pl
     prevTrackDay.current = track?.dayIndex;
     setProgress(0);
   }
+
+  const trackUrl = track
+    ? variant === 'light'
+      ? track.lightTrackUrl
+      : track.heavyTrackUrl
+    : undefined;
+  const coverImage = track
+    ? variant === 'light'
+      ? track.lightCoverImage
+      : track.heavyCoverImage
+    : undefined;
+  const creditedTo = track
+    ? variant === 'light'
+      ? track.lightCreditedTo
+      : track.heavyCreditedTo
+    : undefined;
+  const buyLink = track
+    ? variant === 'light'
+      ? track.lightBuyLink
+      : track.heavyBuyLink
+    : undefined;
 
   const handleProgress = useCallback(
     (state: { played: number; playedSeconds: number }) => {
@@ -65,30 +93,31 @@ export function Player({ track, isPlaying, onPlayPause, onNext, onPrevious }: Pl
       <div className="hidden">
         <ReactPlayer
           ref={playerRef}
-          src={track.trackUrl}
+          url={trackUrl}
           playing={isPlaying}
-          // @ts-expect-error - react-player types conflict with React 19
+          // @ts-expect-error - react-player types mismatch
           onProgress={handleProgress}
           onDuration={handleDuration}
-          // width="0"
-          // height="0"
+          width="0"
+          height="0"
         />
       </div>
       <div className="mx-auto flex max-w-4xl items-center gap-4 px-6 py-3">
         <div className="flex items-center gap-3">
           <div className="relative h-12 w-12 overflow-hidden rounded">
-            <Image
-              src={track.coverImage}
-              alt={`Day ${track.dayIndex + 1}`}
-              fill
-              className="object-cover"
-            />
+            {coverImage && (
+              <img
+                src={coverImage}
+                alt={`Day ${track.dayIndex + 1}`}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
           </div>
           <div className="min-w-0">
             {/* AITODO: Extract track title from YouTube or use a placeholder */}
             <p className="truncate text-sm font-medium">Track Title</p>
             <p className="truncate text-xs text-zinc-500">
-              Album name by {track.creditedTo}
+              Album name by {creditedTo}
             </p>
           </div>
         </div>
@@ -139,14 +168,18 @@ export function Player({ track, isPlaying, onPlayPause, onNext, onPrevious }: Pl
           </div>
         </div>
 
-        {track.buyLink && (
+        {buyLink && (
           <a
-            href={track.buyLink}
+            href={buyLink}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-sm font-medium text-teal-600 hover:text-teal-700"
           >
-            <span className="h-4 w-4 rounded bg-teal-500" />
+            <img
+              src="/bandcamp-button-circle-line-green/bandcamp-button-circle-line-green-128.png"
+              alt="Bandcamp"
+              className="h-5 w-5"
+            />
             Buy track
           </a>
         )}

@@ -1,9 +1,9 @@
 'use client';
 
 import { motion, AnimatePresence } from 'motion/react';
-import Image from 'next/image';
 import { format } from 'date-fns';
 import { Track } from './types';
+import { useAdventDay } from './AdventDayContext';
 
 interface DetailsCardProps {
   track: Track | null;
@@ -12,7 +12,26 @@ interface DetailsCardProps {
   onPlay: () => void;
 }
 
-export function DetailsCard({ track, position, isPlaying, onPlay }: DetailsCardProps) {
+export function DetailsCard({
+  track,
+  position,
+  isPlaying,
+  onPlay,
+}: DetailsCardProps) {
+  const { variant } = useAdventDay();
+
+  if (!track) return null;
+
+  const coverImage =
+    variant === 'light' ? track.lightCoverImage : track.heavyCoverImage;
+  const creditedTo =
+    variant === 'light' ? track.lightCreditedTo : track.heavyCreditedTo;
+  const description =
+    variant === 'light' ? track.lightDescription : track.heavyDescription;
+  const buyLink = variant === 'light' ? track.lightBuyLink : track.heavyBuyLink;
+  const trackUrl =
+    variant === 'light' ? track.lightTrackUrl : track.heavyTrackUrl; // unused in display but good to have logic
+
   return (
     <AnimatePresence>
       {track && (
@@ -21,29 +40,29 @@ export function DetailsCard({ track, position, isPlaying, onPlay }: DetailsCardP
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
           transition={{ duration: 0.15 }}
-          className="pointer-events-none fixed z-50 w-80 rounded-xl bg-white p-4 shadow-2xl"
+          className="pointer-events-none fixed z-50 w-80 rounded-[12px] p-[20px] backdrop-blur-[25px] backdrop-filter bg-[rgba(251,251,251,0.7)] shadow-[-1px_-1px_8px_0px_rgba(255,255,255,0.7),1px_1px_8px_0px_rgba(54,60,83,0.25)]"
           style={{
             left: position.x + 20,
             top: position.y - 100,
           }}
         >
-          <div className="relative mb-4 aspect-square w-full overflow-hidden rounded-lg">
-            <Image
-              src={track.coverImage}
+          <div className="relative mb-2 aspect-square w-full overflow-hidden rounded-[4px]">
+            <img
+              src={coverImage}
               alt={`Day ${track.dayIndex + 1}`}
-              fill
-              className="object-cover"
+              className="absolute inset-0 w-full h-full object-cover"
             />
           </div>
 
-          <p className="mb-2 text-sm text-zinc-500">
-            Track of <span className="ml-2 font-medium">{format(new Date(2025, 11, track.dayIndex + 1), 'dd.MM')}</span>
-          </p>
+          <div className="mb-2 flex w-full items-center justify-end gap-1 text-[16px] font-bold tracking-[-0.64px] text-black">
+            <p>Track of</p>
+            <p>{format(new Date(2025, 11, track.dayIndex + 1), 'dd.MM')}</p>
+          </div>
 
-          <div className="mb-3 flex items-center gap-3">
+          <div className="mb-3 flex items-start gap-3">
             <button
               onClick={onPlay}
-              className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-900 transition-colors hover:bg-zinc-200"
+              className="pointer-events-auto flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-full bg-zinc-100 text-black transition-colors hover:bg-zinc-200"
             >
               {isPlaying ? (
                 <PauseIcon className="h-5 w-5" />
@@ -51,32 +70,40 @@ export function DetailsCard({ track, position, isPlaying, onPlay }: DetailsCardP
                 <PlayIcon className="h-5 w-5 ml-0.5" />
               )}
             </button>
-            <div>
+            <div className="flex min-w-0 flex-col">
               {/* AITODO: Extract track title from YouTube or use a placeholder */}
-              <h3 className="text-xl font-semibold">Track Title</h3>
-              <p className="text-sm text-zinc-500">
+              <h3 className="text-[32px] font-bold leading-[32px] tracking-[-1.28px] text-black line-clamp-2">
+                Track Title
+              </h3>
+              <p className="text-[16px] font-medium tracking-[-0.64px] text-black truncate">
                 {/* AITODO: Extract album/artist info if available */}
-                Album name by {track.creditedTo}
+                Album name by {creditedTo}
               </p>
             </div>
           </div>
 
-          <p className="mb-4 text-sm leading-relaxed text-zinc-600">{track.description}</p>
+          <p className="mb-4 text-[16px] leading-normal tracking-[-0.64px] text-black line-clamp-4">
+            {description}
+          </p>
 
-          <div className="flex items-center justify-between">
-            {track.buyLink && (
+          <div className="flex items-center justify-between gap-4">
+            {buyLink && (
               <a
-                href={track.buyLink}
+                href={buyLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="pointer-events-auto flex items-center gap-2 text-sm font-medium text-teal-600 hover:text-teal-700"
+                className="pointer-events-auto flex shrink-0 items-center gap-2 text-[16px] font-bold tracking-[-0.64px] text-black hover:text-zinc-700"
               >
-                <span className="h-4 w-4 rounded bg-teal-500" />
+                <img
+                  src="/bandcamp-button-circle-line-green/bandcamp-button-circle-line-green-128.png"
+                  alt="Bandcamp"
+                  className="h-[40px] w-[40px]"
+                />
                 Buy track
               </a>
             )}
-            <p className="text-sm text-zinc-500">
-              Chosen by: <span className="font-medium">{track.creditedTo}</span>
+            <p className="text-right text-[16px] font-bold tracking-[-0.64px] text-black">
+              Chosen by: {creditedTo}
             </p>
           </div>
         </motion.div>

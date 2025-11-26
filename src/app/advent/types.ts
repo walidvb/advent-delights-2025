@@ -1,10 +1,19 @@
+export type TrackVariant = 'light' | 'heavy';
+
 export interface Track {
   dayIndex: number;
-  creditedTo: string;
-  trackUrl: string;
-  description: string;
-  buyLink: string;
-  coverImage: string;
+  // Light track
+  lightCreditedTo: string;
+  lightTrackUrl: string;
+  lightDescription: string;
+  lightBuyLink: string;
+  lightCoverImage: string;
+  // Heavy track
+  heavyCreditedTo: string;
+  heavyTrackUrl: string;
+  heavyDescription: string;
+  heavyBuyLink: string;
+  heavyCoverImage: string;
 }
 
 export interface CSVRow {
