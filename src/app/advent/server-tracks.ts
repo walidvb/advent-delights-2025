@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import Papa from 'papaparse';
-import { CSVRow, Track } from './types';
+import { CSVRow, Track, Participant } from './types';
 
 function getPlaceholderImage(seed: number): string {
   return `https://picsum.photos/seed/advent${seed}/400/400`;
@@ -61,6 +61,8 @@ export async function getTracks(): Promise<Track[]> {
 
     return {
       dayIndex: day - 1,
+      creditedTo: row['Credited to'],
+      participantLink: row['Link to you (if you want one!)'] || '',
       // Light track (1)
       lightCreditedTo: row['Credited to'],
       lightTrackUrl: row['1 Track URL'],
@@ -81,4 +83,30 @@ export async function getTracks(): Promise<Track[]> {
   });
 
   return Promise.all(trackPromises);
+}
+
+export function getParticipants(): Participant[] {
+  const csvPath = path.join(process.cwd(), 'src/data.csv');
+  const fileContent = fs.readFileSync(csvPath, 'utf-8');
+
+  const result = Papa.parse<CSVRow>(fileContent, {
+    header: true,
+    skipEmptyLines: true,
+  });
+
+  const seen = new Set<string>();
+  const participants: Participant[] = [];
+
+  for (const row of result.data) {
+    const name = row['Credited to'];
+    if (name && !seen.has(name)) {
+      seen.add(name);
+      participants.push({
+        name,
+        link: row['Link to you (if you want one!)'] || '',
+      });
+    }
+  }
+
+  return participants;
 }

@@ -6,19 +6,22 @@ import { Header } from './Header';
 import { CalendarGrid } from './CalendarGrid';
 import { DetailsCard } from './DetailsCard';
 import { Player } from './Player';
-import { Track } from './types';
+import { AboutSidebar } from './AboutSidebar';
+import { Track, Participant } from './types';
 import { useAdventDay } from './AdventDayContext';
 
 interface AdventCalendarProps {
   tracks: Track[];
+  participants: Participant[];
 }
 
-export function AdventCalendar({ tracks }: AdventCalendarProps) {
+export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
   const { revealedIndices, addRevealedIndex, variant } = useAdventDay();
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hoveredTrack, setHoveredTrack] = useState<Track | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   const revealedSet = useMemo(
     () => new Set(revealedIndices),
@@ -123,7 +126,7 @@ export function AdventCalendar({ tracks }: AdventCalendarProps) {
           }}
         />
       </AnimatePresence>
-      <Header />
+      <Header onAboutClick={() => setIsAboutOpen(true)} />
       <CalendarGrid
         tracks={tracks}
         revealedIndices={revealedSet}
@@ -144,6 +147,11 @@ export function AdventCalendar({ tracks }: AdventCalendarProps) {
         onPlayPause={handlePlayPause}
         onNext={handleNext}
         onPrevious={handlePrevious}
+      />
+      <AboutSidebar
+        isOpen={isAboutOpen}
+        onClose={() => setIsAboutOpen(false)}
+        participants={participants}
       />
     </div>
   );

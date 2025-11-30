@@ -85,6 +85,7 @@ export function CalendarCard({
         setIsRevealing(false);
       }, 800);
     }
+    onPlay();
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {

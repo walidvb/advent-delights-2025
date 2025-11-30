@@ -28,7 +28,6 @@ export function DetailsCard({
     variant === 'light' ? track.lightCreditedTo : track.heavyCreditedTo;
   const description =
     variant === 'light' ? track.lightDescription : track.heavyDescription;
-  const buyLink = variant === 'light' ? track.lightBuyLink : track.heavyBuyLink;
   const artistName =
     variant === 'light' ? track.lightArtistName : track.heavyArtistName;
   const trackName =
@@ -86,26 +85,9 @@ export function DetailsCard({
             {description}
           </p>
 
-          <div className="flex items-center justify-between gap-4">
-            {buyLink && (
-              <a
-                href={buyLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="pointer-events-auto flex shrink-0 items-center gap-2 text-[16px] font-bold tracking-[-0.64px] text-black hover:text-zinc-700"
-              >
-                <img
-                  src="/bandcamp-button-circle-line-green/bandcamp-button-circle-line-green-128.png"
-                  alt="Bandcamp"
-                  className="h-[40px] w-[40px]"
-                />
-                Buy track
-              </a>
-            )}
-            <p className="text-right text-[16px] font-bold tracking-[-0.64px] text-black">
-              Chosen by: {creditedTo}
-            </p>
-          </div>
+          <p className="text-[16px] font-bold tracking-[-0.64px] text-black">
+            Chosen by: {creditedTo}
+          </p>
         </motion.div>
       )}
     </AnimatePresence>

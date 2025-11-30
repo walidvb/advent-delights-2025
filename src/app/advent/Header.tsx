@@ -2,8 +2,13 @@
 
 import { VariantSwitch } from './VariantSwitch';
 import { useAdventDay } from './AdventDayContext';
+import { InfoIcon } from 'lucide-react';
 
-export function Header() {
+interface HeaderProps {
+  onAboutClick: () => void;
+}
+
+export function Header({ onAboutClick }: HeaderProps) {
   const { variant } = useAdventDay();
 
   return (
@@ -18,9 +23,16 @@ export function Header() {
 
       <VariantSwitch />
 
-      <p className="text-sm text-zinc-500">
-        Made with <span className="text-red-500">♥</span> by Walid & Aline
-      </p>
+      <button
+        onClick={onAboutClick}
+        className={`text-sm font-medium transition-colors mr-4 cursor-pointer ${
+          variant === 'light'
+            ? 'text-zinc-600 hover:text-zinc-900'
+            : 'text-zinc-400 hover:text-white'
+        }`}
+      >
+        <InfoIcon className="w-6 h-6" />
+      </button>
     </header>
   );
 }
