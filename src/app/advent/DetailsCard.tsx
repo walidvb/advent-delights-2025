@@ -55,38 +55,27 @@ export function DetailsCard({
             />
           </div>
 
-          <div className="mb-2 flex w-full items-center justify-end gap-1 text-[16px] font-bold tracking-[-0.64px] text-black">
-            <p>Track of</p>
-            <p>{format(new Date(2025, 11, track.dayIndex + 1), 'dd.MM')}</p>
+          <div className="py-2 flex w-full items-center justify-start gap-1 text-[16px] font-bold tracking-[-0.64px] text-black">
+            <p>December {track.dayIndex + 1}</p>
           </div>
 
-          <div className="mb-3 flex items-start gap-3">
-            <button
-              onClick={onPlay}
-              className="pointer-events-auto flex h-[40px] w-[40px] shrink-0 items-center justify-center rounded-full bg-zinc-100 text-black transition-colors hover:bg-zinc-200"
-            >
-              {isPlaying ? (
-                <PauseIcon className="h-5 w-5" />
-              ) : (
-                <PlayIcon className="h-5 w-5 ml-0.5" />
-              )}
-            </button>
+          <div className="py-2 flex items-start gap-3">
             <div className="flex min-w-0 flex-col">
               <h3 className="text-[32px] font-bold leading-[32px] tracking-[-1.28px] text-black line-clamp-2">
                 {trackName || 'Track Title'}
               </h3>
               <p className="text-[16px] font-medium tracking-[-0.64px] text-black truncate">
-                {artistName || creditedTo}
+                by {artistName}
               </p>
             </div>
           </div>
 
-          <p className="mb-4 text-[16px] leading-normal tracking-[-0.64px] text-black line-clamp-4">
+          <p className="py-2 text-[16px] leading-normal tracking-[-0.64px] text-black">
             {description}
           </p>
 
-          <p className="text-[16px] font-bold tracking-[-0.64px] text-black">
-            Chosen by: {creditedTo}
+          <p className="text-[16px] font-bold text-right tracking-[-0.64px] text-black">
+            Submitted by: {creditedTo}
           </p>
         </motion.div>
       )}

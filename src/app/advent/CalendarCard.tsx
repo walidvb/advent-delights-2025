@@ -71,6 +71,39 @@ export function CalendarCard({
   const coverImage =
     variant === 'light' ? track.lightCoverImage : track.heavyCoverImage;
 
+  const hasCoverImage = !!coverImage;
+
+  const fallbackColor = useMemo(() => {
+    const colors = [
+      '#6366f1', // indigo
+      '#8b5cf6', // violet
+      '#a855f7', // purple
+      '#d946ef', // fuchsia
+      '#ec4899', // pink
+      '#f43f5e', // rose
+      '#ef4444', // red
+      '#f97316', // orange
+      '#f59e0b', // amber
+      '#eab308', // yellow
+      '#84cc16', // lime
+      '#22c55e', // green
+      '#10b981', // emerald
+      '#14b8a6', // teal
+      '#06b6d4', // cyan
+      '#0ea5e9', // sky
+      '#3b82f6', // blue
+      '#6366f1', // indigo
+      '#8b5cf6', // violet
+      '#a855f7', // purple
+      '#d946ef', // fuchsia
+      '#ec4899', // pink
+      '#f43f5e', // rose
+      '#ef4444', // red
+      '#f97316', // orange
+    ];
+    return colors[track.dayIndex % colors.length];
+  }, [track.dayIndex]);
+
   const maskRect = useMemo(
     () => generateMaskRect(track.dayIndex + 1),
     [track.dayIndex]
@@ -196,13 +229,20 @@ export function CalendarCard({
       {isUnrevealed && (
         <div
           className="absolute inset-0 overflow-hidden"
-          style={{
-            backgroundImage: `url(${coverImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: 'blur(40px)',
-            transform: 'scale(1.1)',
-          }}
+          style={
+            hasCoverImage
+              ? {
+                  backgroundImage: `url(${coverImage})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  filter: 'blur(40px)',
+                  transform: 'scale(1.1)',
+                }
+              : {
+                  backgroundColor: fallbackColor,
+                  opacity: 0.3,
+                }
+          }
         />
       )}
 
@@ -245,15 +285,26 @@ export function CalendarCard({
               />
             </mask>
           </defs>
-          <image
-            href={coverImage}
-            x="0"
-            y="0"
-            width="100"
-            height="100"
-            preserveAspectRatio="xMidYMid slice"
-            mask={shouldMask ? `url(#${maskId})` : undefined}
-          />
+          {hasCoverImage ? (
+            <image
+              href={coverImage}
+              x="0"
+              y="0"
+              width="100"
+              height="100"
+              preserveAspectRatio="xMidYMid slice"
+              mask={shouldMask ? `url(#${maskId})` : undefined}
+            />
+          ) : (
+            <rect
+              x="0"
+              y="0"
+              width="100"
+              height="100"
+              fill={fallbackColor}
+              mask={shouldMask ? `url(#${maskId})` : undefined}
+            />
+          )}
         </svg>
       </motion.div>
 

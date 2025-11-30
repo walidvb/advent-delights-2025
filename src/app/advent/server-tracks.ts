@@ -51,8 +51,8 @@ export async function getTracks(): Promise<Track[]> {
 
   const trackPromises = Array.from({ length: 25 }, async (_, i) => {
     const day = i + 1;
-    const rowIndex = i % csvRows.length;
-    const row = csvRows[rowIndex];
+    const rowIndex = i;
+    const row = csvRows[rowIndex] || {};
 
     const [lightCoverImage, heavyCoverImage] = await Promise.all([
       resolveCoverImage(row['Track 1 cover id'], row['1 Track URL'], day),

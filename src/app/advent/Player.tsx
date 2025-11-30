@@ -206,7 +206,7 @@ export function Player({
           <div className="flex-1" />
         )}
 
-        <p className="text-sm text-zinc-500 shrink-0">
+        <p className="text-sm text-zinc-500 shrink-0 absolute right-8 top-1/2 translate-y-[-50%]">
           Made with <span className="text-red-500">♥</span> by Walid & Aline
         </p>
       </div>

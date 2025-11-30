@@ -329,14 +329,19 @@ export function VariantSwitch() {
     >
       <motion.div
         layoutId="variant-switch-bg"
-        className={`absolute inset-y-[1px] rounded-full transition-all ${
+        className={`absolute inset-y-px rounded-full transition-colors ${
           variant === 'light' ? 'bg-white' : 'bg-zinc-900'
         }`}
         style={{
           left: variant === 'light' ? 1 : '50%',
           right: variant === 'heavy' ? 1 : '50%',
+          backgroundImage: `url(${
+            variant !== 'light' ? '/dark.webp' : '/light.webp'
+          })`,
+          backgroundSize: '100vw 100vh',
+          backgroundPosition: 'top',
         }}
-        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+        transition={{ type: 'spring', stiffness: 100, damping: 30 }}
       />
       <button
         onClick={() => setVariant('light')}
