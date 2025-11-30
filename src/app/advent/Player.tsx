@@ -101,15 +101,16 @@ export function Player({
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-200 bg-white/95 backdrop-blur-sm">
       <div className="hidden">
+        {' '}
         <ReactPlayer
           ref={playerRef}
-          url={trackUrl}
+          src={trackUrl}
           playing={isPlaying}
           // @ts-expect-error - react-player types mismatch
           onProgress={handleProgress}
           onDuration={handleDuration}
-          width="0"
-          height="0"
+          width="1000"
+          height="1000"
         />
       </div>
       <div className="mx-auto flex max-w-4xl items-center gap-4 px-6 py-3">
