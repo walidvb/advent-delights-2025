@@ -39,21 +39,21 @@ export function AboutSidebar({
               <CloseIcon className="h-6 w-6" />
             </button>
 
-            <h2 className="text-2xl font-bold mb-4">About</h2>
+            <h2 className="text-2xl font-bold mb-4">Bemvindo!</h2>
 
             <p className="text-zinc-600 mb-6">
-              Advent Delights is a musical advent calendar created by friends
-              sharing their favorite tracks. Each day reveals a new song picked
-              by one of our contributors, offering two vibes to choose from:
-              peaceful morning tunes or energetic party bangers.
+              Welcome to the Advent Delights musical calendar. Discover every
+              day one track to sooth your mind and one to make you move your
+              body. In the spirit of giving and receiving, we hope that all our
+              friends may delight their following 25 days with the power of
+              music.
             </p>
 
             <h3 className="text-lg font-semibold mb-3">Contributors</h3>
 
             <p className="text-zinc-600 leading-relaxed">
-              A huge thanks to our old and new friends for their
-              contributions, and for sharing
-              their passion for music with us. <br />
+              A huge thanks to our old and new friends for their contributions,
+              and for sharing their passion for music with us. <br />
               {participants.map((participant, index) => (
                 <span key={participant.name}>
                   {index > 0 && ', '}
