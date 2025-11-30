@@ -1,13 +1,17 @@
 'use client';
 
 import { VariantSwitch } from './VariantSwitch';
+import { useAdventDay } from './AdventDayContext';
 
 export function Header() {
+  const { variant } = useAdventDay();
+
   return (
-    <header className="flex items-center justify-between px-6 py-4">
+    <header className="flex items-center justify-between px-6 py-4 md:py-8">
       <h1
-        className="text-3xl md:text-4xl font-light italic"
-        style={{ fontFamily: 'Georgia, serif' }}
+        className={`text-3xl md:text-6xl font-light italic font-title ${
+          variant === 'light' ? 'text-zinc-900' : 'text-white'
+        }`}
       >
         Advent Delights
       </h1>
