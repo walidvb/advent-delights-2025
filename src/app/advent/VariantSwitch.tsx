@@ -3,13 +3,14 @@
 import { motion } from 'motion/react';
 import { useAdventDay } from './AdventDayContext';
 
-const DiscoBall = () => (
+const DiscoBall = (props: any) => (
   <svg
     width="25"
     height="22"
     viewBox="0 0 25 22"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
+    {...props}
   >
     <path
       fillRule="evenodd"
@@ -144,13 +145,14 @@ const DiscoBall = () => (
   </svg>
 );
 
-const Peace = () => (
+const Peace = (props: any) => (
   <svg
     width="24"
     height="21"
     viewBox="0 0 24 21"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
+    {...props}
   >
     <path
       fillRule="evenodd"
@@ -316,40 +318,45 @@ export function VariantSwitch() {
 
   return (
     <div
-      className={`relative flex items-center gap-1 rounded-full ${
-        variant !== 'light' ? 'bg-white' : 'bg-zinc-900'
-      } p-1`}
+      className="relative flex items-center gap-1 rounded-full p-[1px] overflow-hidden"
+      style={{
+        backgroundImage: `url(${
+          variant === 'light' ? '/dark.webp' : '/light.webp'
+        })`,
+        backgroundSize: '100vw 100vh',
+        backgroundPosition: 'top',
+      }}
     >
       <motion.div
         layoutId="variant-switch-bg"
-        className={`absolute inset-y-1 rounded-full transition-all ${
+        className={`absolute inset-y-[1px] rounded-full transition-all ${
           variant === 'light' ? 'bg-white' : 'bg-zinc-900'
         }`}
         style={{
-          left: variant === 'light' ? 4 : '50%',
-          right: variant === 'heavy' ? 4 : '50%',
+          left: variant === 'light' ? 1 : '50%',
+          right: variant === 'heavy' ? 1 : '50%',
         }}
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
       />
       <button
         onClick={() => setVariant('light')}
-        className={`relative z-10 rounded-full cursor-pointer px-8 py-1.5 transition-colors ${
+        className={`relative z-10 rounded-full cursor-pointer px-10 py-1.5 transition-colors ${
           variant === 'light'
             ? 'text-zinc-900'
-            : 'text-zinc-500 hover:text-zinc-900'
+            : 'text-zinc-800 hover:text-zinc-900'
         }`}
       >
-        <Peace />
+        <Peace className="h-8 w-8" />
       </button>
       <button
         onClick={() => setVariant('heavy')}
-        className={`relative z-10 rounded-full cursor-pointer px-8 py-1.5 transition-colors ${
+        className={`relative z-10 rounded-full cursor-pointer px-10 py-1.5 transition-colors ${
           variant === 'heavy'
             ? 'text-white'
-            : 'text-zinc-400 hover:text-zinc-200'
+            : 'text-zinc-300 hover:text-zinc-100'
         }`}
       >
-        <DiscoBall />
+        <DiscoBall className="h-8 w-8" />
       </button>
     </div>
   );

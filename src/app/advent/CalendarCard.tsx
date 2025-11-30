@@ -1,9 +1,10 @@
 'use client';
 
 import { motion, AnimatePresence } from 'motion/react';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useAdventDay } from './AdventDayContext';
 import { Track } from './types';
+import { cn } from '@/lib/utils';
 
 interface CalendarCardProps {
   track: Track;
@@ -12,14 +13,43 @@ interface CalendarCardProps {
   onReveal: () => void;
   onPlay: () => void;
   onHover: (track: Track | null, event: React.MouseEvent | null) => void;
+  entranceDelay: number;
 }
 
-function generateMaskPosition(day: number): { x: number; y: number } {
-  const seed = day * 17;
-  return {
-    x: 30 + (seed % 40),
-    y: 30 + ((seed * 3) % 40),
+interface MaskRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+function pseudoRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+function generateMaskRect(day: number): MaskRect {
+  let seed = day * 123.456;
+  const rand = () => {
+    seed += 1;
+    return pseudoRandom(seed);
   };
+
+  const maxArea = 500;
+  const minDim = 10;
+  const maxDim = 30;
+
+  const width = minDim + rand() * (maxDim - minDim);
+  const maxHeight = Math.min(maxDim, maxArea / width);
+  const height = minDim + rand() * Math.max(0, maxHeight - minDim);
+
+  const padding = 5;
+  const maxX = 100 - width - padding;
+  const maxY = 100 - height - padding;
+  const x = padding + rand() * (maxX - padding);
+  const y = padding + rand() * (maxY - padding);
+
+  return { x, y, width, height };
 }
 
 export function CalendarCard({
@@ -29,18 +59,20 @@ export function CalendarCard({
   onReveal,
   onPlay,
   onHover,
+  entranceDelay,
 }: CalendarCardProps) {
   const { currentDayIndex, variant } = useAdventDay();
   const isInactive = track.dayIndex > currentDayIndex;
   const isUnrevealed = !isInactive && !isRevealed;
   const [isHovered, setIsHovered] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
+  const maskId = useId();
 
   const coverImage =
     variant === 'light' ? track.lightCoverImage : track.heavyCoverImage;
 
-  const maskPosition = useMemo(
-    () => generateMaskPosition(track.dayIndex + 1),
+  const maskRect = useMemo(
+    () => generateMaskRect(track.dayIndex + 1),
     [track.dayIndex]
   );
 
@@ -51,7 +83,7 @@ export function CalendarCard({
       setTimeout(() => {
         onReveal();
         setIsRevealing(false);
-      }, 600);
+      }, 800);
     }
   };
 
@@ -77,14 +109,82 @@ export function CalendarCard({
     }
   };
 
-  const getMaskSize = () => {
-    if (isRevealing) return 200;
-    return 15;
+  const getMaskState = ():
+    | 'entrance'
+    | 'initial'
+    | 'revealing'
+    | 'revealed' => {
+    if (isRevealing) return 'revealing';
+    if (isRevealed) return 'revealed';
+    return 'initial';
+  };
+
+  const maskState = getMaskState();
+  const shouldMask = !isRevealed;
+
+  const aspectRatio = maskRect.width / maskRect.height;
+  const centerX = maskRect.x + maskRect.width / 2;
+  const centerY = maskRect.y + maskRect.height / 2;
+
+  const phase1Width = maskRect.width * 1.5;
+  const phase1Height = maskRect.height * 1.5;
+  const phase1X = centerX - phase1Width / 2;
+  const phase1Y = centerY - phase1Height / 2;
+
+  const finalSize = 200;
+  const finalWidth = aspectRatio >= 1 ? finalSize : finalSize * aspectRatio;
+  const finalHeight = aspectRatio >= 1 ? finalSize / aspectRatio : finalSize;
+  const finalX = centerX - finalWidth / 2 - 50;
+  const finalY = centerY - finalHeight / 2 - 50;
+
+  const maskVariants = {
+    entrance: {
+      x: centerX,
+      y: centerY,
+      width: 0,
+      height: 0,
+    },
+    initial: {
+      x: maskRect.x,
+      y: maskRect.y,
+      width: maskRect.width,
+      height: maskRect.height,
+    },
+    revealing: {
+      x: [maskRect.x, phase1X, finalX],
+      y: [maskRect.y, phase1Y, finalY],
+      width: [maskRect.width, phase1Width, finalWidth + 100],
+      height: [maskRect.height, phase1Height, finalHeight + 100],
+    },
+    revealed: {
+      x: finalX,
+      y: finalY,
+      width: finalWidth + 100,
+      height: finalHeight + 100,
+    },
+  };
+
+  const entranceTransition = {
+    duration: 0.5,
+    delay: entranceDelay,
+    ease: [0.22, 1, 0.36, 1] as const,
+  };
+
+  const revealTransition = {
+    duration: 0.5,
+    times: [0, 0.35, 1],
+    ease: 'easeInOut' as const,
   };
 
   return (
     <motion.div
-      className="relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-zinc-100"
+      className={cn(
+        'relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-zinc-100',
+        {
+          'bg-zinc-100/25 backdrop-blur-2xl': isInactive && variant === 'light',
+          'bg-zinc-900/25 backdrop-blur-2xl': isInactive && variant !== 'light',
+        }
+      )}
       onClick={handleClick}
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
@@ -92,55 +192,68 @@ export function CalendarCard({
       whileHover={!isInactive ? { scale: 1.02 } : undefined}
       transition={{ duration: 0.2 }}
     >
+      {isUnrevealed && (
+        <div
+          className="absolute inset-0 overflow-hidden"
+          style={{
+            backgroundImage: `url(${coverImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            filter: 'blur(40px)',
+            transform: 'scale(1.1)',
+          }}
+        />
+      )}
+
+      {isInactive && (
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.25)',
+            backdropFilter: 'blur(20px)',
+          }}
+        />
+      )}
+
       <motion.div
         className="absolute inset-0"
         animate={{
-          filter: isInactive ? 'grayscale(100%) opacity(0.3)' : 'none',
+          scale: isRevealing || isRevealed ? 1 : 1.1,
         }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
-        <img
-          src={coverImage}
-          alt={`Day ${track.dayIndex + 1}`}
-          className="absolute inset-0 w-full h-full object-cover transition-all duration-500"
-          style={{
-            filter: isUnrevealed && !isRevealing ? 'blur(0px)' : 'blur(0px)',
-            WebkitMaskImage: isUnrevealed
-              ? `radial-gradient(circle at ${maskPosition.x}% ${
-                  maskPosition.y
-                }%, black 0%, black ${
-                  getMaskSize() * 0.5
-                }%, transparent ${getMaskSize()}%)`
-              : undefined,
-            maskImage: isUnrevealed
-              ? `radial-gradient(circle at ${maskPosition.x}% ${
-                  maskPosition.y
-                }%, black 0%, black ${
-                  getMaskSize() * 0.5
-                }%, transparent ${getMaskSize()}%)`
-              : undefined,
-            transition:
-              'mask-image 0.6s ease-out, -webkit-mask-image 0.6s ease-out, filter 0.5s ease-out',
-          }}
-        />
-
-        {/* <AnimatePresence>
-          {isUnrevealed && !isRevealing && (
-            <motion.div
-              className="absolute inset-0 flex items-center justify-center"
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 1.2 }}
-              transition={{ duration: 0.3 }}
-            >
-              <img
-                src={coverImage}
-                alt=""
-                width={80}
-                height={80}
-                className="rounded object-cover shadow-lg"
+        <svg
+          className="absolute inset-0 w-full h-full"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          <defs>
+            <mask id={maskId}>
+              <rect x="0" y="0" width="100" height="100" fill="black" />
+              <motion.rect
+                key={variant}
+                fill="white"
+                initial="entrance"
+                animate={maskState}
+                variants={maskVariants}
+                transition={
+                  maskState === 'initial'
+                    ? entranceTransition
+                    : revealTransition
+                }
               />
-            </motion.div>
-          )}
-        </AnimatePresence> */}
+            </mask>
+          </defs>
+          <image
+            href={coverImage}
+            x="0"
+            y="0"
+            width="100"
+            height="100"
+            preserveAspectRatio="xMidYMid slice"
+            mask={shouldMask ? `url(#${maskId})` : undefined}
+          />
+        </svg>
       </motion.div>
 
       <AnimatePresence>

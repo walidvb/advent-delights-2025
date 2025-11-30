@@ -29,8 +29,10 @@ export function DetailsCard({
   const description =
     variant === 'light' ? track.lightDescription : track.heavyDescription;
   const buyLink = variant === 'light' ? track.lightBuyLink : track.heavyBuyLink;
-  const trackUrl =
-    variant === 'light' ? track.lightTrackUrl : track.heavyTrackUrl; // unused in display but good to have logic
+  const artistName =
+    variant === 'light' ? track.lightArtistName : track.heavyArtistName;
+  const trackName =
+    variant === 'light' ? track.lightTrackName : track.heavyTrackName;
 
   return (
     <AnimatePresence>
@@ -71,13 +73,11 @@ export function DetailsCard({
               )}
             </button>
             <div className="flex min-w-0 flex-col">
-              {/* AITODO: Extract track title from YouTube or use a placeholder */}
               <h3 className="text-[32px] font-bold leading-[32px] tracking-[-1.28px] text-black line-clamp-2">
-                Track Title
+                {trackName || 'Track Title'}
               </h3>
               <p className="text-[16px] font-medium tracking-[-0.64px] text-black truncate">
-                {/* AITODO: Extract album/artist info if available */}
-                Album name by {creditedTo}
+                {artistName || creditedTo}
               </p>
             </div>
           </div>

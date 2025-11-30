@@ -53,6 +53,16 @@ export function Player({
       ? track.lightBuyLink
       : track.heavyBuyLink
     : undefined;
+  const artistName = track
+    ? variant === 'light'
+      ? track.lightArtistName
+      : track.heavyArtistName
+    : undefined;
+  const trackName = track
+    ? variant === 'light'
+      ? track.lightTrackName
+      : track.heavyTrackName
+    : undefined;
 
   const handleProgress = useCallback(
     (state: { played: number; playedSeconds: number }) => {
@@ -114,10 +124,11 @@ export function Player({
             )}
           </div>
           <div className="min-w-0">
-            {/* AITODO: Extract track title from YouTube or use a placeholder */}
-            <p className="truncate text-sm font-medium">Track Title</p>
+            <p className="truncate text-sm font-medium">
+              {trackName || 'Track Title'}
+            </p>
             <p className="truncate text-xs text-zinc-500">
-              Album name by {creditedTo}
+              {artistName || creditedTo}
             </p>
           </div>
         </div>

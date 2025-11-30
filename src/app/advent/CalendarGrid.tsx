@@ -23,7 +23,7 @@ export function CalendarGrid({
   return (
     <div className="overflow-auto px-6 py-4">
       <div className="grid min-w-[800px] grid-cols-5 gap-4">
-        {tracks.map((track) => (
+        {tracks.map((track, index) => (
           <CalendarCard
             key={track.dayIndex}
             track={track}
@@ -32,6 +32,7 @@ export function CalendarGrid({
             onReveal={() => onReveal(track.dayIndex)}
             onPlay={() => onPlay(track.dayIndex)}
             onHover={onHover}
+            entranceDelay={index * 0.05}
           />
         ))}
       </div>

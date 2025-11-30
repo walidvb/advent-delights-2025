@@ -22,27 +22,12 @@ async function fetchNoembedThumbnail(url: string): Promise<string | null> {
 }
 
 async function resolveCoverImage(
-  coverUrl: string | undefined,
+  coverId: string | undefined,
   trackUrl: string,
   day: number
 ): Promise<string> {
-  if (coverUrl) {
-    // Check for Google Drive ID
-    const driveIdMatch = coverUrl.match(/id=([a-zA-Z0-9_-]+)/);
-    if (driveIdMatch) {
-      const id = driveIdMatch[1];
-      const localPath = path.join(
-        process.cwd(),
-        'public',
-        'covers',
-        `${id}.jpg`
-      );
-      if (fs.existsSync(localPath)) {
-        return `/covers/${id}.jpg`;
-      }
-    } else if (!coverUrl.includes('drive.google.com')) {
-      return coverUrl;
-    }
+  if (coverId) {
+    return `/covers/${coverId}`;
   }
 
   const noembedThumbnail = await fetchNoembedThumbnail(trackUrl);
@@ -64,39 +49,34 @@ export async function getTracks(): Promise<Track[]> {
 
   const csvRows = result.data;
 
-  // Create array of promises to resolve tracks in parallel
   const trackPromises = Array.from({ length: 25 }, async (_, i) => {
     const day = i + 1;
     const rowIndex = i % csvRows.length;
     const row = csvRows[rowIndex];
 
     const [lightCoverImage, heavyCoverImage] = await Promise.all([
-      resolveCoverImage(
-        row['Light Track cover image'],
-        row['Light track URL'],
-        day
-      ),
-      resolveCoverImage(
-        row['Heavy Track cover image'],
-        row['Heavy track URL'],
-        day
-      ),
+      resolveCoverImage(row['Track 1 cover id'], row['1 Track URL'], day),
+      resolveCoverImage(row['Track 2 cover id'], row['2 Track URL'], day),
     ]);
 
     return {
       dayIndex: day - 1,
-      // Light track
+      // Light track (1)
       lightCreditedTo: row['Credited to'],
-      lightTrackUrl: row['Light track URL'],
-      lightDescription: row['Light track Description'],
-      lightBuyLink: row['Light track buy link'],
+      lightTrackUrl: row['1 Track URL'],
+      lightDescription: row['1 Track Description'],
+      lightBuyLink: row['1 Track buy link'],
       lightCoverImage,
-      // Heavy track
+      lightArtistName: (row['Artist name 1'] || '').trim(),
+      lightTrackName: (row['Track name 1'] || '').trim(),
+      // Heavy track (2)
       heavyCreditedTo: row['Credited to'],
-      heavyTrackUrl: row['Heavy track URL'],
-      heavyDescription: row['Heavy track Description'],
-      heavyBuyLink: row['Heavy track buy link'],
+      heavyTrackUrl: row['2 Track URL'],
+      heavyDescription: row['2 Track Description'],
+      heavyBuyLink: row['2 Track buy link'],
       heavyCoverImage,
+      heavyArtistName: (row['Artist Name 2'] || '').trim(),
+      heavyTrackName: (row['Track name 2'] || '').trim(),
     };
   });
 

@@ -1,0 +1,13 @@
+@font-face {
+    font-family: "Luthon Southard Script";
+    src: url("Luthon Southard Script.eot"); /* IE9 */
+    src: url("Luthon Southard Script.eot?#iefix") format("embedded-opentype"), /* IE6-IE8 */
+    url("Luthon Southard Script.woff2") format("woff2"), /* chrome 36+, firefox 39+,iOS 10+, Android 67+ */
+    url("Luthon Southard Script.woff") format("woff"), /* chrome, firefox */
+    url("Luthon Southard Script.ttf") format("truetype"), /* chrome, firefox, opera, Safari, Android, iOS 4.2+ */
+    url("Luthon Southard Script.svg#Luthon Southard Script") format("svg"); /* iOS 4.1- */
+    font-style: normal;
+    font-weight: normal;
+}
+
+
