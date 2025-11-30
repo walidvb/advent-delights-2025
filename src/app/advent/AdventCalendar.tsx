@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Header } from './Header';
 import { CalendarGrid } from './CalendarGrid';
 import { DetailsCard } from './DetailsCard';
@@ -13,7 +14,7 @@ interface AdventCalendarProps {
 }
 
 export function AdventCalendar({ tracks }: AdventCalendarProps) {
-  const { revealedIndices, addRevealedIndex } = useAdventDay();
+  const { revealedIndices, addRevealedIndex, variant } = useAdventDay();
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hoveredTrack, setHoveredTrack] = useState<Track | null>(null);
@@ -106,7 +107,22 @@ export function AdventCalendar({ tracks }: AdventCalendarProps) {
       : null;
 
   return (
-    <div className="min-h-screen bg-white pb-24">
+    <div className="relative min-h-screen pb-24">
+      <AnimatePresence>
+        <motion.div
+          key={variant}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+          className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url(${
+              variant === 'light' ? '/light.webp' : '/dark.webp'
+            })`,
+          }}
+        />
+      </AnimatePresence>
       <Header />
       <CalendarGrid
         tracks={tracks}
