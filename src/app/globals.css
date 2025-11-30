@@ -3,8 +3,8 @@
 
 @font-face {
   font-family: "Luthon Southard Script";
-  src: url("/font/Luthon Southard Script.woff2") format("woff2"),
-    url("/font/Luthon Southard Script.woff") format("woff");
+  src: url("/font/luthon-southard-script.woff2") format("woff2"),
+      url("/font/luthon-southard-script.woff") format("woff");
   font-style: normal;
   font-weight: normal;
 }
