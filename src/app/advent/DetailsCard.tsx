@@ -1,5 +1,6 @@
 'use client';
 
+import { useLayoutEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import { Track } from './types';
@@ -36,21 +37,49 @@ export function DetailsCard({
     trackName: variant === 'light' ? t.lightTrackName : t.heavyTrackName,
   });
 
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [cardPosition, setCardPosition] = useState({ left: 0, top: 0 });
+
+  useLayoutEffect(() => {
+    if (!track || typeof window === 'undefined') return;
+
+    const padding = 16;
+    const cardWidth = cardRef.current?.offsetWidth ?? 320;
+    const cardHeight = cardRef.current?.offsetHeight ?? 500;
+
+    let left = position.x + 20;
+    let top = position.y - 100;
+
+    if (left + cardWidth > window.innerWidth - padding) {
+      left = position.x - cardWidth - 20;
+    }
+    if (left < padding) {
+      left = padding;
+    }
+
+    if (top + cardHeight > window.innerHeight - padding) {
+      top = window.innerHeight - cardHeight - padding;
+    }
+    if (top < padding) {
+      top = padding;
+    }
+
+    setCardPosition({ left, top });
+  }, [position.x, position.y, track]);
+
   return (
     <>
       {/* Desktop hover card */}
       <AnimatePresence>
         {track && (
           <motion.div
+            ref={cardRef}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.15 }}
-            className="pointer-events-none fixed z-100 w-80 rounded-[12px] p-[20px] backdrop-blur-[25px] backdrop-filter bg-[rgba(251,251,251,0.7)] shadow-[-1px_-1px_8px_0px_rgba(255,255,255,0.7),1px_1px_8px_0px_rgba(54,60,83,0.25)] hidden md:block"
-            style={{
-              left: position.x + 20,
-              top: position.y - 100,
-            }}
+            className="pointer-events-none fixed z-100 w-80 max-h-[calc(100vh-32px)] overflow-y-auto rounded-[12px] p-[20px] backdrop-blur-[25px] backdrop-filter bg-[rgba(251,251,251,0.7)] shadow-[-1px_-1px_8px_0px_rgba(255,255,255,0.7),1px_1px_8px_0px_rgba(54,60,83,0.25)] hidden md:block"
+            style={cardPosition}
           >
             <CardContent
               {...getTrackDetails(track)}

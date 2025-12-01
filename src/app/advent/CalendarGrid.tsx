@@ -24,7 +24,7 @@ export function CalendarGrid({
 }: CalendarGridProps) {
   return (
     <div className="overflow-auto px-6 py-4">
-      <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 xl:grid-cols-7 gap-4">
         {tracks.map((track, index) => (
           <CalendarCard
             key={track.dayIndex}

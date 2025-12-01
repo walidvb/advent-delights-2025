@@ -47,7 +47,7 @@ function generateMaskRect(day: number, variant: string): MaskRect {
   const maxHeight = Math.min(maxDim, maxArea / width);
   const height = minDim + rand() * Math.max(0, maxHeight - minDim);
 
-  const padding = 5;
+  const padding = 25;
   const maxX = 100 - width - padding;
   const maxY = 100 - height - padding;
   const x = padding + rand() * (maxX - padding);
@@ -224,10 +224,11 @@ export function CalendarCard({
   return (
     <motion.div
       className={cn(
-        'relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-zinc-100',
+        'relative aspect-square  overflow-hidden rounded-lg bg-zinc-100',
         {
           'bg-zinc-100/25 backdrop-blur-2xl': isInactive && variant === 'light',
           'bg-zinc-900/25 backdrop-blur-2xl': isInactive && variant !== 'light',
+          'cursor-pointer': !isInactive,
         }
       )}
       onClick={handleClick}
