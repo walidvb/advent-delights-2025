@@ -4,6 +4,15 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Advent Delights',
   description: '25 days, 25 selectors, and 2 moods!',
+  openGraph: {
+    images: [
+      {
+        url: '/og-image.png',
+        width: 2413,
+        height: 1396,
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
