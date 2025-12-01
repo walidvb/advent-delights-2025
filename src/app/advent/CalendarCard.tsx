@@ -123,7 +123,7 @@ export function CalendarCard({
       setTimeout(() => {
         onReveal();
         setIsRevealing(false);
-      }, 800);
+      }, 600);
     }
     if (isMobile && isRevealed) {
       onMobileSelect();
@@ -323,24 +323,32 @@ export function CalendarCard({
       <AnimatePresence>
         {isUnrevealed && isHovered && !isRevealing && (
           <motion.div
-            className="absolute inset-0 flex items-end justify-center pb-4"
-            initial={{ opacity: 0, y: 10 }}
+            className="absolute inset-0 flex items-start justify-center pt-4"
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
+            exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
           >
             <span className="rounded-full bg-white/90 px-3 py-1 text-sm font-medium text-zinc-700 shadow-sm">
-              Discover track
+              Reveal track
             </span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="absolute bottom-2 right-2 text-2xl font-light text-white drop-shadow-lg">
+      <div
+        className={cn(
+          'absolute bottom-2 right-2 text-2xl font-heavy drop-shadow-lg',
+          {
+            'text-zinc-900  text-shadow-zinc-100': variant === 'light',
+            'text-zinc-100  text-shadow-zinc-900': variant !== 'light',
+          }
+        )}
+      >
         {track.dayIndex + 1}
       </div>
 
-      {!isInactive && (
+      {!isInactive && isRevealed && (
         <button
           onClick={handlePlayClick}
           className="absolute bottom-2 left-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-900 shadow-md transition-transform hover:scale-110"

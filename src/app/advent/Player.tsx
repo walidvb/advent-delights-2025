@@ -1,9 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Track } from './types';
+import { Track, TrackVariant } from './types';
 import ReactPlayer from 'react-player';
 import { useAdventDay } from './AdventDayContext';
 
@@ -13,6 +13,12 @@ interface PlayerProps {
   onPlayPause: () => void;
   onNext: () => void;
   onPrevious: () => void;
+}
+
+interface LockedPlayback {
+  dayIndex: number;
+  variant: TrackVariant;
+  url: string;
 }
 
 export function Player({
@@ -28,52 +34,90 @@ export function Player({
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [seeking, setSeeking] = useState(false);
-  const prevTrackDay = useRef(track?.dayIndex);
+  const [lockedPlayback, setLockedPlayback] = useState<LockedPlayback | null>(
+    null
+  );
 
-  if (track?.dayIndex !== prevTrackDay.current) {
-    prevTrackDay.current = track?.dayIndex;
-    setProgress(0);
-  }
-
-  const trackUrl = track
+  const currentVariantUrl = track
     ? variant === 'light'
       ? track.lightTrackUrl
       : track.heavyTrackUrl
     : undefined;
+
+  useEffect(() => {
+    if (track && currentVariantUrl) {
+      const shouldLock =
+        !lockedPlayback || lockedPlayback.dayIndex !== track.dayIndex;
+      if (shouldLock) {
+        setLockedPlayback({
+          dayIndex: track.dayIndex,
+          variant,
+          url: currentVariantUrl,
+        });
+      }
+    }
+  }, [track, currentVariantUrl, variant, lockedPlayback]);
+
+  useEffect(() => {
+    if (!isPlaying && lockedPlayback && currentVariantUrl) {
+      if (
+        lockedPlayback.variant !== variant ||
+        lockedPlayback.url !== currentVariantUrl
+      ) {
+        setLockedPlayback({
+          dayIndex: lockedPlayback.dayIndex,
+          variant,
+          url: currentVariantUrl,
+        });
+      }
+    }
+  }, [isPlaying, variant, currentVariantUrl, lockedPlayback]);
+
+  const trackUrl =
+    isPlaying && lockedPlayback && track?.dayIndex === lockedPlayback.dayIndex
+      ? lockedPlayback.url
+      : currentVariantUrl;
+
+  const displayVariant =
+    isPlaying && lockedPlayback && track?.dayIndex === lockedPlayback.dayIndex
+      ? lockedPlayback.variant
+      : variant;
+
   const coverImage = track
-    ? variant === 'light'
+    ? displayVariant === 'light'
       ? track.lightCoverImage
       : track.heavyCoverImage
     : undefined;
   const creditedTo = track
-    ? variant === 'light'
+    ? displayVariant === 'light'
       ? track.lightCreditedTo
       : track.heavyCreditedTo
     : undefined;
   const buyLink = track
-    ? variant === 'light'
+    ? displayVariant === 'light'
       ? track.lightBuyLink
       : track.heavyBuyLink
     : undefined;
   const artistName = track
-    ? variant === 'light'
+    ? displayVariant === 'light'
       ? track.lightArtistName
       : track.heavyArtistName
     : undefined;
   const trackName = track
-    ? variant === 'light'
+    ? displayVariant === 'light'
       ? track.lightTrackName
       : track.heavyTrackName
     : undefined;
 
-  const handleProgress = useCallback(
-    (state: { played: number; playedSeconds: number }) => {
-      if (!seeking) {
-        setDuration(playerRef.current?.duration);
-      }
-    },
-    [seeking]
-  );
+  const handleEnded = useCallback(() => {
+    onNext();
+  }, [onNext]);
+
+  const handleProgress = useCallback(() => {
+    if (!seeking) {
+      setDuration(playerRef.current?.duration);
+    }
+  }, [seeking]);
 
   const handleTimeUpdate = () => {
     setProgress(playerRef.current?.currentTime / playerRef.current?.duration);
@@ -114,9 +158,9 @@ export function Player({
           ref={playerRef}
           src={trackUrl}
           playing={isPlaying}
-          // @ts-expect-error - react-player types mismatch
           onProgress={handleProgress}
           onTimeUpdate={handleTimeUpdate}
+          onEnded={handleEnded}
           width="1000"
           height="1000"
         />

@@ -2,6 +2,7 @@
 
 import { motion } from 'motion/react';
 import { useAdventDay } from './AdventDayContext';
+import { cn } from '@/lib/utils';
 
 const DiscoBall = (props: any) => (
   <svg
@@ -195,7 +196,12 @@ export function VariantSwitch() {
             backgroundSize: '100vw 100vh',
             backgroundPosition: 'top',
           }}
-          transition={{ type: 'spring', stiffness: 100, damping: 30 }}
+          transition={{
+            type: 'spring',
+            stiffness: 100,
+            damping: 30,
+            duration: 0.2,
+          }}
         />
         <button
           onClick={() => setVariant('light')}
@@ -222,11 +228,12 @@ export function VariantSwitch() {
         </button>
         <button
           onClick={() => setVariant('heavy')}
-          className={`relative z-10 rounded-full cursor-pointer px-10 py-1.5 transition-colors ${
+          className={cn(
+            `relative z-10 rounded-full cursor-pointer px-10 py-1.5 transition-colors`,
             variant === 'heavy'
               ? 'text-white'
               : 'text-zinc-300 hover:text-zinc-100'
-          }`}
+          )}
         >
           <motion.div
             animate={

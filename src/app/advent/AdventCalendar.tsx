@@ -50,10 +50,10 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
       } else {
         setPlayingIndex(index);
         setIsPlaying(true);
-        addRevealedIndex(index);
+        // addRevealedIndex(index);
       }
     },
-    [playingIndex, isPlaying, addRevealedIndex]
+    [playingIndex, isPlaying]
   );
 
   const handlePlayPause = useCallback(() => {

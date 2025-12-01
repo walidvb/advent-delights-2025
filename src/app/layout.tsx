@@ -14,8 +14,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: img,
-        width: 2413,
-        height: 1396,
+        width: 1200,
+        height: 687,
         alt: 'Advent Delights',
       },
     ],

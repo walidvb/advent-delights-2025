@@ -28,7 +28,7 @@ const getCurrentDayIndex = (): number => {
   const year = now.getFullYear();
   const month = now.getMonth();
   const day = now.getDate();
-
+  return 8;
   if (year < 2025 || (year === 2025 && month < 11)) {
     return -1;
   }
