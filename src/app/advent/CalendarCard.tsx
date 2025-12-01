@@ -124,8 +124,6 @@ export function CalendarCard({
         onReveal();
         setIsRevealing(false);
       }, 800);
-      onPlay();
-      return;
     }
     if (isMobile && isRevealed) {
       onMobileSelect();

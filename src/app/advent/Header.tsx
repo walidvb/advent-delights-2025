@@ -64,7 +64,7 @@ export function Header({ onAboutClick }: HeaderProps) {
             : 'text-zinc-400 hover:text-white'
         }`}
       >
-        <AboutIcon className="w-12 h-12" />
+        <AboutIcon className="w-8 h-8" />
       </button>
     </header>
   );
