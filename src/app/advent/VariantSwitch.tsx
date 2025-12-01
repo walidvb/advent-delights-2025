@@ -314,55 +314,110 @@ const Peace = (props: any) => (
 );
 
 export function VariantSwitch() {
-  const { variant, setVariant } = useAdventDay();
+  const { variant, setVariant, currentDayIndex, revealedIndices } =
+    useAdventDay();
+
+  const hasUnrevealedTracks =
+    currentDayIndex >= 0 &&
+    Array.from({ length: currentDayIndex + 1 }, (_, i) => i).some(
+      (i) => !revealedIndices.includes(i)
+    );
 
   return (
-    <div
-      className="relative flex items-center gap-1 rounded-full p-[1px] overflow-hidden"
-      style={{
-        backgroundImage: `url(${
-          variant === 'light' ? '/dark.webp' : '/light.webp'
-        })`,
-        backgroundSize: '100vw 100vh',
-        backgroundPosition: 'top',
-      }}
-    >
-      <motion.div
-        layoutId="variant-switch-bg"
-        className={`absolute inset-y-px rounded-full transition-colors ${
-          variant === 'light' ? 'bg-white' : 'bg-zinc-900'
-        }`}
+    <div className="flex flex-col items-center gap-1 pt-[22px]">
+      <div
+        className="relative flex items-center gap-1 rounded-full p-[1px] overflow-hidden"
         style={{
-          left: variant === 'light' ? 1 : '50%',
-          right: variant === 'heavy' ? 1 : '50%',
           backgroundImage: `url(${
-            variant !== 'light' ? '/dark.webp' : '/light.webp'
+            variant === 'light' ? '/dark.webp' : '/light.webp'
           })`,
           backgroundSize: '100vw 100vh',
           backgroundPosition: 'top',
         }}
-        transition={{ type: 'spring', stiffness: 100, damping: 30 }}
-      />
-      <button
-        onClick={() => setVariant('light')}
-        className={`relative z-10 rounded-full cursor-pointer px-10 py-1.5 transition-colors ${
-          variant === 'light'
-            ? 'text-zinc-900'
-            : 'text-zinc-800 hover:text-zinc-900'
+      >
+        <motion.div
+          layoutId="variant-switch-bg"
+          className={`absolute inset-y-px rounded-full transition-colors ${
+            variant === 'light' ? 'bg-white' : 'bg-zinc-900'
+          }`}
+          style={{
+            left: variant === 'light' ? 1 : '50%',
+            right: variant === 'heavy' ? 1 : '50%',
+            backgroundImage: `url(${
+              variant !== 'light' ? '/dark.webp' : '/light.webp'
+            })`,
+            backgroundSize: '100vw 100vh',
+            backgroundPosition: 'top',
+          }}
+          transition={{ type: 'spring', stiffness: 100, damping: 30 }}
+        />
+        <button
+          onClick={() => setVariant('light')}
+          className={`relative z-10 rounded-full cursor-pointer px-10 py-1.5 transition-colors ${
+            variant === 'light'
+              ? 'text-zinc-900'
+              : 'text-zinc-800 hover:text-zinc-900'
+          }`}
+        >
+          <motion.div
+            animate={
+              hasUnrevealedTracks && variant !== 'light'
+                ? { scale: [1, 1.15, 1, 1.15, 1] }
+                : { scale: 1 }
+            }
+            transition={
+              hasUnrevealedTracks && variant !== 'light'
+                ? { duration: 0.4, repeat: Infinity, repeatDelay: 2.5 }
+                : undefined
+            }
+          >
+            <Peace className="h-8 w-8" />
+          </motion.div>
+        </button>
+        <button
+          onClick={() => setVariant('heavy')}
+          className={`relative z-10 rounded-full cursor-pointer px-10 py-1.5 transition-colors ${
+            variant === 'heavy'
+              ? 'text-white'
+              : 'text-zinc-300 hover:text-zinc-100'
+          }`}
+        >
+          <motion.div
+            animate={
+              hasUnrevealedTracks && variant !== 'heavy'
+                ? { scale: [1, 1.15, 1, 1.15, 1] }
+                : { scale: 1 }
+            }
+            transition={
+              hasUnrevealedTracks && variant !== 'heavy'
+                ? { duration: 0.4, repeat: Infinity, repeatDelay: 2.5 }
+                : undefined
+            }
+          >
+            <DiscoBall className="h-8 w-8" />
+          </motion.div>
+        </button>
+      </div>
+      <span
+        className={`text-[12px] font-medium ${
+          variant === 'light' ? 'text-zinc-600' : 'text-zinc-400'
         }`}
       >
-        <Peace className="h-8 w-8" />
-      </button>
-      <button
-        onClick={() => setVariant('heavy')}
-        className={`relative z-10 rounded-full cursor-pointer px-10 py-1.5 transition-colors ${
-          variant === 'heavy'
-            ? 'text-white'
-            : 'text-zinc-300 hover:text-zinc-100'
-        }`}
-      >
-        <DiscoBall className="h-8 w-8" />
-      </button>
+        {variant === 'light' ? (
+          'soothe your mind'
+        ) : (
+          <>
+            get{' '}
+            <a
+              href="https://www.youtube.com/watch?v=I1188GO4p1E"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              schwifty
+            </a>
+          </>
+        )}
+      </span>
     </div>
   );
 }

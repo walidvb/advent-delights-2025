@@ -22,6 +22,9 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
   const [hoveredTrack, setHoveredTrack] = useState<Track | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [mobileSelectedTrack, setMobileSelectedTrack] = useState<Track | null>(
+    null
+  );
 
   const revealedSet = useMemo(
     () => new Set(revealedIndices),
@@ -98,6 +101,20 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
     []
   );
 
+  const handleMobileSelect = useCallback((track: Track) => {
+    setMobileSelectedTrack(track);
+  }, []);
+
+  const handleCloseMobileDetails = useCallback(() => {
+    setMobileSelectedTrack(null);
+  }, []);
+
+  const handleMobilePlay = useCallback(() => {
+    if (mobileSelectedTrack) {
+      handlePlay(mobileSelectedTrack.dayIndex);
+    }
+  }, [mobileSelectedTrack, handlePlay]);
+
   const handleDetailsPlay = useCallback(() => {
     if (hoveredTrack) {
       handlePlay(hoveredTrack.dayIndex);
@@ -134,12 +151,19 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
         onReveal={handleReveal}
         onPlay={handlePlay}
         onHover={handleHover}
+        onMobileSelect={handleMobileSelect}
       />
       <DetailsCard
         track={hoveredTrack}
         position={mousePosition}
         isPlaying={isPlaying && hoveredTrack?.dayIndex === playingIndex}
         onPlay={handleDetailsPlay}
+        mobileTrack={mobileSelectedTrack}
+        onCloseMobile={handleCloseMobileDetails}
+        onMobilePlay={handleMobilePlay}
+        isMobilePlaying={
+          isPlaying && mobileSelectedTrack?.dayIndex === playingIndex
+        }
       />
       <Player
         track={currentTrack}

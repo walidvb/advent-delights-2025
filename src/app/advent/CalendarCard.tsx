@@ -13,6 +13,7 @@ interface CalendarCardProps {
   onReveal: () => void;
   onPlay: () => void;
   onHover: (track: Track | null, event: React.MouseEvent | null) => void;
+  onMobileSelect: () => void;
   entranceDelay: number;
 }
 
@@ -28,10 +29,13 @@ function pseudoRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
-function generateMaskRect(day: number): MaskRect {
+function generateMaskRect(day: number, variant: string): MaskRect {
   let seed = day * 123.456;
   const rand = () => {
     seed += 1;
+    if (variant === 'light') {
+      seed += 1;
+    }
     return pseudoRandom(seed);
   };
 
@@ -59,6 +63,7 @@ export function CalendarCard({
   onReveal,
   onPlay,
   onHover,
+  onMobileSelect,
   entranceDelay,
 }: CalendarCardProps) {
   const { currentDayIndex, variant } = useAdventDay();
@@ -105,9 +110,11 @@ export function CalendarCard({
   }, [track.dayIndex]);
 
   const maskRect = useMemo(
-    () => generateMaskRect(track.dayIndex + 1),
-    [track.dayIndex]
+    () => generateMaskRect(track.dayIndex + 1, variant),
+    [track.dayIndex, variant]
   );
+
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
   const handleClick = () => {
     if (isInactive) return;
@@ -117,8 +124,14 @@ export function CalendarCard({
         onReveal();
         setIsRevealing(false);
       }, 800);
+      onPlay();
+      return;
     }
-    onPlay();
+    if (isMobile && isRevealed) {
+      onMobileSelect();
+    } else {
+      onPlay();
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {

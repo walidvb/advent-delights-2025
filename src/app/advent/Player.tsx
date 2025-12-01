@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useRef, useState, useCallback } from 'react';
@@ -68,18 +69,18 @@ export function Player({
   const handleProgress = useCallback(
     (state: { played: number; playedSeconds: number }) => {
       if (!seeking) {
-        setProgress(state.playedSeconds);
+        setDuration(playerRef.current?.duration);
       }
     },
     [seeking]
   );
 
-  const handleDuration = (d: number) => {
-    setDuration(d);
+  const handleTimeUpdate = () => {
+    setProgress(playerRef.current?.currentTime / playerRef.current?.duration);
   };
 
   const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setProgress(parseFloat(e.target.value));
+    setProgress(parseFloat(e.target.value) / 100);
   };
 
   const handleSeekMouseDown = () => {
@@ -88,7 +89,10 @@ export function Player({
 
   const handleSeekMouseUp = (e: React.MouseEvent<HTMLInputElement>) => {
     setSeeking(false);
-    playerRef.current?.seekTo(parseFloat((e.target as HTMLInputElement).value));
+    if (!playerRef.current) return;
+    playerRef.current.currentTime =
+      (parseFloat((e.target as HTMLInputElement).value) / 100) *
+      playerRef.current.duration;
   };
 
   const formatTime = (seconds: number) => {
@@ -102,7 +106,7 @@ export function Player({
       initial={{ y: '100%' }}
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-200 bg-white/95 backdrop-blur-sm"
+      className="fixed bottom-0 left-0 right-0 z-20 border-t border-zinc-200 bg-white/95 backdrop-blur-sm"
     >
       <div className="hidden">
         {' '}
@@ -112,15 +116,15 @@ export function Player({
           playing={isPlaying}
           // @ts-expect-error - react-player types mismatch
           onProgress={handleProgress}
-          onDuration={handleDuration}
+          onTimeUpdate={handleTimeUpdate}
           width="1000"
           height="1000"
         />
       </div>
-      <div className="mx-auto flex max-w-4xl items-center gap-4 px-6 py-3">
+      <div className="mx-auto flex justify-between flex-wrap max-w-4xl items-center gap-4 px-6 py-3">
         {track ? (
           <>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 -0">
               <div className="relative h-12 w-12 overflow-hidden rounded">
                 {coverImage && (
                   <img
@@ -139,42 +143,57 @@ export function Player({
                 </p>
               </div>
             </div>
+            {buyLink && (
+              <a
+                href={buyLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex md:hidden items-center gap-2 text-sm font-medium text-teal-600 hover:text-teal-700 -0"
+              >
+                <img
+                  src="/bandcamp-button-circle-line-green/bandcamp-button-circle-line-green-128.png"
+                  alt="Bandcamp"
+                  className="h-5 w-5"
+                />
+                Buy track
+              </a>
+            )}
 
-            <div className="flex flex-1 flex-col items-center gap-1">
+            <div className="flex flex-1 flex-col items-center gap-3 w-ful">
               <div className="flex items-center gap-4">
                 <button
                   onClick={onPrevious}
                   className="text-zinc-600 transition-colors hover:text-zinc-900"
                 >
-                  <PreviousIcon className="h-5 w-5" />
+                  <PreviousIcon className="h-7 w-7 md:h-5 md:w-5" />
                 </button>
                 <button
                   onClick={onPlayPause}
                   className="text-zinc-900 transition-colors hover:text-zinc-600"
                 >
                   {isPlaying ? (
-                    <PauseIcon className="h-6 w-6" />
+                    <PauseIcon className="h-8 w-8 md:h-6 md:w-6" />
                   ) : (
-                    <PlayIcon className="h-6 w-6" />
+                    <PlayIcon className="h-8 w-8 md:h-6 md:w-6" />
                   )}
                 </button>
                 <button
                   onClick={onNext}
                   className="text-zinc-600 transition-colors hover:text-zinc-900"
                 >
-                  <NextIcon className="h-5 w-5" />
+                  <NextIcon className="h-7 w-7 md:h-5 md:w-5" />
                 </button>
               </div>
 
               <div className="flex w-full max-w-md items-center gap-2">
                 <span className="text-xs text-zinc-500">
-                  {formatTime(progress)}
+                  {formatTime(Math.ceil(progress * duration))}
                 </span>
                 <input
                   type="range"
                   min={0}
-                  max={duration || 100}
-                  value={progress}
+                  max={100}
+                  value={seeking ? undefined : progress * 100}
                   onChange={handleSeekChange}
                   onMouseDown={handleSeekMouseDown}
                   onMouseUp={handleSeekMouseUp}
@@ -191,7 +210,7 @@ export function Player({
                 href={buyLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm font-medium text-teal-600 hover:text-teal-700"
+                className="items-center hidden md:flex gap-2 text-sm font-medium text-teal-600 hover:text-teal-700 -0"
               >
                 <img
                   src="/bandcamp-button-circle-line-green/bandcamp-button-circle-line-green-128.png"
@@ -206,7 +225,7 @@ export function Player({
           <div className="flex-1" />
         )}
 
-        <p className="text-sm text-zinc-500 shrink-0 absolute right-8 top-1/2 translate-y-[-50%]">
+        <p className="text-sm text-zinc-500 shrink-0 md:absolute md:right-8 md:top-1/2 md:translate-y-[-50%]">
           Made with <span className="text-red-500">♥</span> by Walid & Aline
         </p>
       </div>
