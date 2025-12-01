@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'motion/react';
 import { Participant } from './types';
+import { SpinningDisk } from './SpinningDisk';
 
 interface AboutSidebarProps {
   isOpen: boolean;
@@ -39,13 +40,13 @@ export function AboutSidebar({
               <CloseIcon className="h-6 w-6" />
             </button>
 
-            <h2 className="text-2xl font-bold mb-4">Bemvindo!</h2>
+            <h2 className="text-2xl font-bold mb-4">Bem vinda, bem vindo!</h2>
 
             <p className="text-zinc-600 mb-6">
-              Welcome to the Advent Delights musical calendar. Discover every
-              day one track to sooth your mind and one to make you move your
-              body. In the spirit of giving and receiving, we hope that all our
-              friends may delight their following 25 days with the power of
+              Welcome to the <em>Advent Delights</em> musical calendar. Discover
+              every day one track to sooth your mind and one to make you move
+              your body. In the spirit of giving and receiving, we hope that all
+              our friends may delight their following 25 days with the power of
               music.
             </p>
 
@@ -74,9 +75,32 @@ export function AboutSidebar({
             </p>
 
             <div className="grow"></div>
-            <p>
+
+            <div className="mb-4 px-8">
+              <SpinningDisk src="/angel-disk.webp" alt="Angel disk" />
+            </div>
+
+            <p className="mt-4">
               Made in 2025, with <span className="text-teal-600">🩶</span> by
-              Aline & Walid
+              <a
+                href="https://https://alinema-vanboetzelaer.framer.website"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-teal-600 hover:text-teal-700 hover:underline"
+              >
+                {' '}
+                Aline
+              </a>{' '}
+              &{' '}
+              <a
+                href="https://walidvb.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-teal-600 hover:text-teal-700 hover:underline"
+              >
+                {' '}
+                Walid
+              </a>
             </p>
           </motion.aside>
         </>
