@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
 import './globals.css';
 
-const img = 'https://aventoz.pages.dev/og-image.png';
+const img = 'https://adventoz.pages.dev/og-image.png';
 
 export const metadata: Metadata = {
-  title: 'AvenTOZ',
+  title: 'AdvenTOZ',
   description: '25 jours, 25 potes, and 2 humeurs!',
   openGraph: {
     title: 'AdvenTOZ',
     description: '25 jours, 25 potes, and 2 humeurs!',
-    url: 'https://aventoz.pages.dev',
+    url: 'https://adventoz.pages.dev',
     siteName: 'Advent TOZ',
     images: [
       {
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     description: '25 jours, 25 potes, and 2 humeurs!',
     images: [img],
   },
-  metadataBase: new URL('https://aventoz.pages.dev'),
+  metadataBase: new URL('https://adventoz.pages.dev'),
 };
 
 export default function RootLayout({

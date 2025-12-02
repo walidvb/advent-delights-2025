@@ -113,15 +113,18 @@ export function Player({
     onNext();
   }, [onNext]);
 
-  const handleProgress = useCallback(() => {
-    if (!seeking) {
-      setDuration(playerRef.current?.duration);
-    }
-  }, [seeking]);
+  const handleProgress = useCallback(
+    (state: { played: number; playedSeconds: number }) => {
+      if (!seeking) {
+        setProgress(state.played);
+      }
+    },
+    [seeking]
+  );
 
-  const handleTimeUpdate = () => {
-    setProgress(playerRef.current?.currentTime / playerRef.current?.duration);
-  };
+  const handleDuration = useCallback((dur: number) => {
+    setDuration(dur);
+  }, []);
 
   const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setProgress(parseFloat(e.target.value) / 100);
@@ -134,9 +137,9 @@ export function Player({
   const handleSeekMouseUp = (e: React.MouseEvent<HTMLInputElement>) => {
     setSeeking(false);
     if (!playerRef.current) return;
-    playerRef.current.currentTime =
-      (parseFloat((e.target as HTMLInputElement).value) / 100) *
-      playerRef.current.duration;
+    playerRef.current.seekTo(
+      parseFloat((e.target as HTMLInputElement).value) / 100
+    );
   };
 
   const formatTime = (seconds: number) => {
@@ -153,16 +156,15 @@ export function Player({
       className="fixed bottom-0 left-0 right-0 z-20 border-t border-zinc-200 bg-white/95 backdrop-blur-sm"
     >
       <div className="hidden">
-        {' '}
         <ReactPlayer
           ref={playerRef}
-          src={trackUrl}
+          url={trackUrl}
           playing={isPlaying}
           onProgress={handleProgress}
-          onTimeUpdate={handleTimeUpdate}
+          onDuration={handleDuration}
           onEnded={handleEnded}
-          width="1000"
-          height="1000"
+          width={0}
+          height={0}
         />
       </div>
       <div className="mx-auto flex justify-between flex-wrap max-w-4xl items-center gap-4 px-6 py-3">

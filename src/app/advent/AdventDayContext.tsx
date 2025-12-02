@@ -31,7 +31,6 @@ const getCurrentDayIndex = (): number => {
   if (year < 2025 || (year === 2025 && month < 11)) {
     return -1;
   }
-  return 50;
   if (year > 2025 || (year === 2025 && month > 11)) {
     return 24;
   }
