@@ -270,7 +270,26 @@ export function Player({
         )}
 
         <p className="text-sm text-zinc-500 shrink-0 md:absolute md:right-8 md:top-1/2 md:translate-y-[-50%]">
-          Made with <span className="text-red-500">♥</span> by Walid & Aline
+          Made in 2025, with <span className="text-red-500">🩶</span> by
+          <a
+            href="https://https://alinema-vanboetzelaer.framer.website"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-teal-600 hover:text-teal-700 hover:underline"
+          >
+            {' '}
+            Aline
+          </a>{' '}
+          &{' '}
+          <a
+            href="https://walidvb.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-teal-600 hover:text-teal-700 hover:underline"
+          >
+            {' '}
+            Walid
+          </a>
         </p>
       </div>
     </motion.div>

@@ -127,7 +127,7 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
       : null;
 
   return (
-    <div className="relative min-h-screen pb-24">
+    <div className="relative min-h-screen pb-64 md:pb-24">
       <AnimatePresence>
         <motion.div
           key={variant}

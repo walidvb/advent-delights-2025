@@ -173,7 +173,7 @@ export function VariantSwitch() {
   return (
     <div className="flex flex-col items-center gap-1 pt-[22px]">
       <div
-        className="relative flex items-center gap-1 rounded-full p-[1px] overflow-hidden"
+        className="relative flex items-center gap-1 rounded-full p-px overflow-hidden"
         style={{
           backgroundImage: `url(${
             variant === 'light' ? '/dark.webp' : '/light.webp'
@@ -214,7 +214,7 @@ export function VariantSwitch() {
           <motion.div
             animate={
               hasUnrevealedTracks && variant !== 'light'
-                ? { scale: [1, 1.15, 1, 1.15, 1] }
+                ? { scale: [1, 1.2, 1, 1.2, 1] }
                 : { scale: 1 }
             }
             transition={

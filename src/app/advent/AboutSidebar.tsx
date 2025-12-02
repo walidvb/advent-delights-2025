@@ -48,6 +48,9 @@ export function AboutSidebar({
               your body. In the spirit of giving and receiving, we hope that all
               our friends may delight their following 25 days with the power of
               music.
+              <br />
+              Yes, we know, other advent calendars only have 24 days. This is
+              why this one is better!
             </p>
 
             <h3 className="text-lg font-semibold mb-3">Contributors</h3>
@@ -71,7 +74,8 @@ export function AboutSidebar({
                     <span>{participant.name}</span>
                   )}
                 </span>
-              ))}
+              ))}{' '}
+              and more to be revealed soon!
             </p>
 
             <div className="grow"></div>
@@ -81,7 +85,7 @@ export function AboutSidebar({
             </div>
 
             <p className="mt-4">
-              Made in 2025, with <span className="text-teal-600">🩶</span> by
+              Made in 2025, with <span className="text-red-500">🩶</span> by
               <a
                 href="https://https://alinema-vanboetzelaer.framer.website"
                 target="_blank"
