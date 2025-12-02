@@ -43,12 +43,15 @@ export function Header({ onAboutClick }: HeaderProps) {
   return (
     <header className="flex flex-col md:grid grid-cols-3 md:items-center justify-between px-6 py-4 md:py-8 gap-8">
       <h1
-        className={`text-5xl md:text-6xl font-light italic font-title ${
+        className={`text-5xl md:text-6xl font-light italic font-title select-none ${
           variant === 'light' ? 'text-zinc-900' : 'text-white'
         }`}
         onDoubleClick={() => {
           localStorage.clear();
           window.location.reload();
+        }}
+        style={{
+          textShadow: '0px .5px 0px currentColor, 0.5px 0px 0px currentColor',
         }}
       >
         <span
