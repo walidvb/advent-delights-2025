@@ -68,6 +68,7 @@ export function CalendarCard({
 }: CalendarCardProps) {
   const { currentDayIndex, variant } = useAdventDay();
   const isInactive = track.dayIndex > currentDayIndex;
+  const isToday = track.dayIndex === currentDayIndex;
   const isUnrevealed = !isInactive && !isRevealed;
   const [isHovered, setIsHovered] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
@@ -231,12 +232,20 @@ export function CalendarCard({
           'cursor-pointer': !isInactive,
         }
       )}
+      animate={
+        isToday && isUnrevealed ? { scale: [1, 1.1, 1, 1.1, 1] } : { scale: 1 }
+      }
+      transition={
+        isToday
+          ? { duration: 0.7, repeat: Infinity, repeatDelay: 2.5 }
+          : { duration: 0.2 }
+      }
       onClick={handleClick}
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       whileHover={!isInactive ? { scale: 1.02 } : undefined}
-      transition={{ duration: 0.2 }}
+      whileTap={!isInactive ? { scale: 0.98 } : undefined}
     >
       {isUnrevealed && (
         <div
@@ -338,12 +347,21 @@ export function CalendarCard({
 
       <div
         className={cn(
-          'absolute bottom-2 right-2 text-2xl font-heavy drop-shadow-lg',
+          'absolute bottom-2 right-2 text-2xl font-bold',
           {
-            'text-zinc-900  text-shadow-zinc-100': variant === 'light',
-            'text-zinc-100  text-shadow-zinc-900': variant !== 'light',
-          }
+            'text-zinc-900': variant === 'light',
+            'text-zinc-100': variant !== 'light',
+          },
+          'text-zinc-100'
         )}
+        style={
+          {
+            '--color': variant !== 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)',
+            '--color': 'rgb(0,0,0)',
+            textShadow: '1px 1px 0px var(--color)',
+            // '0 1px 2px var(--color), 1px 0 2px var(--color), -1px 0 2px var(--color), 0 -1px 2px var(--color)',
+          } as React.CSSProperties
+        }
       >
         {track.dayIndex + 1}
       </div>
