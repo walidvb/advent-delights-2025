@@ -1,16 +1,16 @@
 import type { Metadata } from 'next';
 import './globals.css';
 
-const img = 'https://advent.diggersdelights.net/og-image.png';
+const img = 'https://aventoz.pages.dev/og-image.png';
 
 export const metadata: Metadata = {
-  title: 'Advent Delights',
-  description: '25 days, 25 selectors, and 2 moods!',
+  title: 'AvenTOZ',
+  description: '25 jours, 25 potes, and 2 humeurs!',
   openGraph: {
-    title: 'Advent Delights',
-    description: '25 days, 25 selectors, and 2 moods!',
-    url: 'https://advent.diggersdelights.net',
-    siteName: 'Advent Delights',
+    title: 'AdvenTOZ',
+    description: '25 jours, 25 potes, and 2 humeurs!',
+    url: 'https://aventoz.pages.dev',
+    siteName: 'Advent TOZ',
     images: [
       {
         url: img,
@@ -23,11 +23,11 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Advent Delights',
-    description: '25 days, 25 selectors, and 2 moods!',
+    title: 'AdvenTOZ',
+    description: '25 jours, 25 potes, and 2 humeurs!',
     images: [img],
   },
-  metadataBase: new URL('https://advent.diggersdelights.net'),
+  metadataBase: new URL('https://aventoz.pages.dev'),
 };
 
 export default function RootLayout({

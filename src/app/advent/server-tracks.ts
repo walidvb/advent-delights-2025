@@ -68,9 +68,9 @@ export async function getTracks(): Promise<Track[]> {
       lightTrackUrl: row['1 Track URL'],
       lightDescription: row['1 Track Description'],
       lightBuyLink: row['1 Track buy link'],
-      lightCoverImage: lightCoverImage
+      lightCoverImage: `${lightCoverImage
         .replace(/\.\w+$/, '.webp')
-        .replace(/\s/g, '-'),
+        .replace(/\s/g, '-')}.webp`,
       lightArtistName: (row['Artist name 1'] || '').trim(),
       lightTrackName: (row['Track name 1'] || '').trim(),
       // Heavy track (2)
@@ -78,9 +78,9 @@ export async function getTracks(): Promise<Track[]> {
       heavyTrackUrl: row['2 Track URL'],
       heavyDescription: row['2 Track Description'],
       heavyBuyLink: row['2 Track buy link'],
-      heavyCoverImage: heavyCoverImage
+      heavyCoverImage: `${heavyCoverImage
         .replace(/\s/g, '-')
-        .replace(/\.\w+$/, '.webp'),
+        .replace(/\.\w+$/, '.webp')}.webp`,
       heavyArtistName: (row['Artist Name 2'] || '').trim(),
       heavyTrackName: (row['Track name 2'] || '').trim(),
     };
