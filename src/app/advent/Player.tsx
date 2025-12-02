@@ -169,7 +169,7 @@ export function Player({
         {track ? (
           <>
             <div className="flex items-center gap-3 -0">
-              <div className="relative h-12 w-12 overflow-hidden rounded">
+              <div className="relative h-15 w-15 overflow-hidden rounded">
                 {coverImage && (
                   <img
                     src={coverImage}
@@ -185,6 +185,21 @@ export function Player({
                 <p className="truncate text-xs text-zinc-500">
                   {artistName || creditedTo}
                 </p>
+                {buyLink && (
+                  <a
+                    href={buyLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="items-center hidden md:flex gap-2 text-sm font-medium text-teal-600 hover:text-teal-700 -0"
+                  >
+                    <img
+                      src="/bandcamp-button-circle-line-green/bandcamp-button-circle-line-green-128.png"
+                      alt="Bandcamp"
+                      className="h-4 w-4"
+                    />
+                    Get track
+                  </a>
+                )}
               </div>
             </div>
             {buyLink && (
@@ -209,23 +224,23 @@ export function Player({
                   onClick={onPrevious}
                   className="text-zinc-600 transition-colors hover:text-zinc-900"
                 >
-                  <PreviousIcon className="h-7 w-7 md:h-5 md:w-5" />
+                  <PreviousIcon className="h-7 w-7 md:h-7 md:w-7" />
                 </button>
                 <button
                   onClick={onPlayPause}
                   className="text-zinc-900 transition-colors hover:text-zinc-600"
                 >
                   {isPlaying ? (
-                    <PauseIcon className="h-8 w-8 md:h-6 md:w-6" />
+                    <PauseIcon className="h-8 w-8 md:h-10 md:w-10" />
                   ) : (
-                    <PlayIcon className="h-8 w-8 md:h-6 md:w-6" />
+                    <PlayIcon className="h-8 w-8 md:h-10 md:w-10" />
                   )}
                 </button>
                 <button
                   onClick={onNext}
                   className="text-zinc-600 transition-colors hover:text-zinc-900"
                 >
-                  <NextIcon className="h-7 w-7 md:h-5 md:w-5" />
+                  <NextIcon className="h-7 w-7 md:h-7 md:w-7" />
                 </button>
               </div>
 
@@ -248,27 +263,28 @@ export function Player({
                 </span>
               </div>
             </div>
-
-            {buyLink && (
-              <a
-                href={buyLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="items-center hidden md:flex gap-2 text-sm font-medium text-teal-600 hover:text-teal-700 -0"
-              >
-                <img
-                  src="/bandcamp-button-circle-line-green/bandcamp-button-circle-line-green-128.png"
-                  alt="Bandcamp"
-                  className="h-5 w-5"
-                />
-                Buy track
-              </a>
-            )}
           </>
         ) : (
           <div className="flex-1" />
         )}
 
+        {track && (
+          <div>
+            <span className="text-zinc-500 text-sm">Curated by:</span> <br />{' '}
+            {track?.participantLink ? (
+              <a
+                href={track.participantLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-teal-600 hover:text-teal-700 hover:underline"
+              >
+                {track?.creditedTo}
+              </a>
+            ) : (
+              track?.creditedTo
+            )}
+          </div>
+        )}
         <p className="text-sm text-zinc-500 shrink-0 md:absolute md:right-8 md:top-1/2 md:translate-y-[-50%]">
           Made in 2025, with <span className="text-red-500">🩶</span> by
           <a
