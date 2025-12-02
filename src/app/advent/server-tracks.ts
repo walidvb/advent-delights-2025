@@ -32,6 +32,7 @@ async function resolveCoverImage(
 
   const noembedThumbnail = await fetchNoembedThumbnail(trackUrl);
   if (noembedThumbnail) {
+    console.log(trackUrl, noembedThumbnail);
     return noembedThumbnail;
   }
 
@@ -39,7 +40,7 @@ async function resolveCoverImage(
 }
 
 export async function getTracks(): Promise<Track[]> {
-  const csvPath = path.join(process.cwd(), 'src/data.csv');
+  const csvPath = path.join(process.cwd(), 'src/data-toz.csv');
   const fileContent = fs.readFileSync(csvPath, 'utf-8');
 
   const result = Papa.parse<CSVRow>(fileContent, {
@@ -89,7 +90,7 @@ export async function getTracks(): Promise<Track[]> {
 }
 
 export function getParticipants(): Participant[] {
-  const csvPath = path.join(process.cwd(), 'src/data.csv');
+  const csvPath = path.join(process.cwd(), 'src/data-toz.csv');
   const fileContent = fs.readFileSync(csvPath, 'utf-8');
 
   const result = Papa.parse<CSVRow>(fileContent, {

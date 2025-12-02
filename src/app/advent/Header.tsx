@@ -51,7 +51,20 @@ export function Header({ onAboutClick }: HeaderProps) {
           window.location.reload();
         }}
       >
-        Advent Delights
+        <span
+          style={{
+            textShadow: '0px 1px 0px currentColor',
+          }}
+        >
+          Adven
+        </span>
+        <span
+          style={{
+            textShadow: '0px 1px 0px currentColor, 1px 0px 0px currentColor',
+          }}
+        >
+          TOZ
+        </span>
       </h1>
 
       <VariantSwitch />
