@@ -356,7 +356,7 @@ export function CalendarCard({
         )}
         style={
           {
-            '--color': variant !== 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)',
+            // '--color': variant !== 'light' ? 'rgb(0,0,0)' : 'rgb(255,255,255)',
             '--color': 'rgb(0,0,0)',
             textShadow: '1px 1px 0px var(--color)',
             // '0 1px 2px var(--color), 1px 0 2px var(--color), -1px 0 2px var(--color), 0 -1px 2px var(--color)',
