@@ -9,12 +9,9 @@ import {
   useCallback,
 } from 'react';
 import { useLocalStorage } from 'react-use';
-import { TrackVariant } from './types';
 
 interface AdventDayContextValue {
   currentDayIndex: number;
-  variant: TrackVariant;
-  setVariant: (variant: TrackVariant) => void;
   revealedIndices: number[];
   addRevealedIndex: (index: number) => void;
 }
@@ -45,49 +42,32 @@ interface AdventDayProviderProps {
 
 export function AdventDayProvider({ children }: AdventDayProviderProps) {
   const [currentDayIndex] = useState<number>(() => getCurrentDayIndex());
-  const [variant, setVariant] = useState<TrackVariant>('light');
-  const [revealedIndicesMap, setRevealedIndicesMap] = useLocalStorage<
-    Record<TrackVariant, number[]>
-  >('advent-revealed-map', {
-    light: [],
-    heavy: [],
-  });
+  const [revealedIndices, setRevealedIndices] = useLocalStorage<number[]>(
+    'advent-revealed',
+    []
+  );
 
-  // Ensure map structure exists (for backward compatibility or first run)
-  const normalizedMap = useMemo(() => {
-    return {
-      light: Array.isArray(revealedIndicesMap?.light)
-        ? revealedIndicesMap.light
-        : [],
-      heavy: Array.isArray(revealedIndicesMap?.heavy)
-        ? revealedIndicesMap.heavy
-        : [],
-    };
-  }, [revealedIndicesMap]);
-
-  const revealedIndices = normalizedMap[variant];
+  const normalizedIndices = useMemo(
+    () => (Array.isArray(revealedIndices) ? revealedIndices : []),
+    [revealedIndices]
+  );
 
   const addRevealedIndex = useCallback(
     (index: number) => {
-      if (!revealedIndices.includes(index)) {
-        setRevealedIndicesMap({
-          ...normalizedMap,
-          [variant]: [...revealedIndices, index],
-        });
+      if (!normalizedIndices.includes(index)) {
+        setRevealedIndices([...normalizedIndices, index]);
       }
     },
-    [normalizedMap, revealedIndices, variant, setRevealedIndicesMap]
+    [normalizedIndices, setRevealedIndices]
   );
 
   const value = useMemo(
     () => ({
       currentDayIndex,
-      variant,
-      setVariant,
-      revealedIndices,
+      revealedIndices: normalizedIndices,
       addRevealedIndex,
     }),
-    [currentDayIndex, variant, revealedIndices, addRevealedIndex]
+    [currentDayIndex, normalizedIndices, addRevealedIndex]
   );
 
   return (

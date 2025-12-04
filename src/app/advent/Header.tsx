@@ -1,8 +1,5 @@
 'use client';
 
-import { VariantSwitch } from './VariantSwitch';
-import { useAdventDay } from './AdventDayContext';
-
 interface HeaderProps {
   onAboutClick: () => void;
 }
@@ -38,14 +35,10 @@ function AboutIcon({ className }: { className?: string }) {
 }
 
 export function Header({ onAboutClick }: HeaderProps) {
-  const { variant } = useAdventDay();
-
   return (
-    <header className="flex flex-col md:grid grid-cols-3 md:items-center justify-between px-6 py-4 md:py-8 gap-8">
+    <header className="flex items-center justify-between px-6 py-4 md:py-8">
       <h1
-        className={`text-5xl md:text-6xl font-light italic font-title select-none ${
-          variant === 'light' ? 'text-zinc-900' : 'text-white'
-        }`}
+        className="text-5xl md:text-6xl font-light italic font-title select-none text-zinc-900"
         onDoubleClick={() => {
           localStorage.clear();
           window.location.reload();
@@ -54,18 +47,12 @@ export function Header({ onAboutClick }: HeaderProps) {
           textShadow: '0px .5px 0px currentColor, 0.5px 0px 0px currentColor',
         }}
       >
-        Advent Delights
+        The Advent Way
       </h1>
-
-      <VariantSwitch />
 
       <button
         onClick={onAboutClick}
-        className={`text-sm font-medium transition-colors mr-4 cursor-pointer absolute top-6 right-4 md:static  justify-self-end ${
-          variant === 'light'
-            ? 'text-zinc-600 hover:text-zinc-900'
-            : 'text-zinc-400 hover:text-white'
-        }`}
+        className="text-sm font-medium transition-colors cursor-pointer text-zinc-600 hover:text-zinc-900"
       >
         <AboutIcon className="w-8 h-8" />
       </button>

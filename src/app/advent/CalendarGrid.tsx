@@ -6,9 +6,7 @@ import { Track } from './types';
 interface CalendarGridProps {
   tracks: Track[];
   revealedIndices: Set<number>;
-  playingIndex: number | null;
   onReveal: (index: number) => void;
-  onPlay: (index: number) => void;
   onHover: (track: Track | null, event: React.MouseEvent | null) => void;
   onMobileSelect: (track: Track) => void;
 }
@@ -16,9 +14,7 @@ interface CalendarGridProps {
 export function CalendarGrid({
   tracks,
   revealedIndices,
-  playingIndex,
   onReveal,
-  onPlay,
   onHover,
   onMobileSelect,
 }: CalendarGridProps) {
@@ -30,9 +26,7 @@ export function CalendarGrid({
             key={track.dayIndex}
             track={track}
             isRevealed={revealedIndices.has(track.dayIndex)}
-            isPlaying={playingIndex === track.dayIndex}
             onReveal={() => onReveal(track.dayIndex)}
-            onPlay={() => onPlay(track.dayIndex)}
             onHover={onHover}
             onMobileSelect={() => onMobileSelect(track)}
             entranceDelay={index * 0.05}

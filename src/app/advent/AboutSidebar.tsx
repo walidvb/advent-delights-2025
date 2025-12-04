@@ -40,42 +40,30 @@ export function AboutSidebar({
               <CloseIcon className="h-6 w-6" />
             </button>
 
-            <h2 className="text-2xl font-bold mb-4">Bem vinda, bem vindo!</h2>
+            <h2 className="text-2xl font-bold mb-4 italic">
+              &ldquo;Leap, and the net will appear.&rdquo;
+            </h2>
 
             <p className="text-zinc-600 mb-6">
-              Welcome to the <em>Advent Delights</em> musical calendar. Discover
-              every day one track to sooth your mind and one to make you move
-              your body. In the spirit of giving and receiving, we hope that all
-              our friends may delight their following 25 days with the power of
-              music.
-              <br />
-              Yes, we know, other advent calendars only have 24 days. This is
-              why this one is better!
+              Welcome to the The Advent Way calendar. Discover every day
+              something fun to exercise your creativity. <br /> In the spirit of
+              giving and receiving, we hope that all our friends may delight
+              their following days empowered by our inner child.
+            </p>
+            <p className="text-zinc-600 mb-6">
+              And yes, we know, other advent calendars have already started
+              before. This is why this one is better! 😉
             </p>
 
             <h3 className="text-lg font-semibold mb-3">Contributors</h3>
 
             <p className="text-zinc-600 leading-relaxed">
-              A huge thanks to our old and new friends for their contributions,
-              and for sharing their passion for music with us. <br />
               {participants.map((participant, index) => (
                 <span key={participant.name}>
                   {index > 0 && ', '}
-                  {participant.link ? (
-                    <a
-                      href={participant.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-teal-600 hover:text-teal-700 hover:underline"
-                    >
-                      {participant.name}
-                    </a>
-                  ) : (
-                    <span>{participant.name}</span>
-                  )}
+                  <span>{participant.name}</span>
                 </span>
-              ))}{' '}
-              and more to be revealed soon!
+              ))}
             </p>
 
             <div className="grow"></div>

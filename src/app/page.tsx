@@ -2,8 +2,8 @@ import { AdventCalendar } from './advent/AdventCalendar';
 import { AdventDayProvider } from './advent/AdventDayContext';
 import { getTracks, getParticipants } from './advent/server-tracks';
 
-export default async function Home() {
-  const tracks = await getTracks();
+export default function Home() {
+  const tracks = getTracks();
   const participants = getParticipants();
 
   return (
