@@ -17,6 +17,8 @@ interface AdventDayContextValue {
   setVariant: (variant: TrackVariant) => void;
   revealedIndices: number[];
   addRevealedIndex: (index: number) => void;
+  shuffleEnabled: boolean;
+  setShuffleEnabled: (enabled: boolean) => void;
 }
 
 const AdventDayContext = createContext<AdventDayContextValue | undefined>(
@@ -46,6 +48,7 @@ interface AdventDayProviderProps {
 export function AdventDayProvider({ children }: AdventDayProviderProps) {
   const [currentDayIndex] = useState<number>(() => getCurrentDayIndex());
   const [variant, setVariant] = useState<TrackVariant>('light');
+  const [shuffleEnabled, setShuffleEnabled] = useState(false);
   const [revealedIndicesMap, setRevealedIndicesMap] = useLocalStorage<
     Record<TrackVariant, number[]>
   >('advent-revealed-map', {
@@ -86,8 +89,16 @@ export function AdventDayProvider({ children }: AdventDayProviderProps) {
       setVariant,
       revealedIndices,
       addRevealedIndex,
+      shuffleEnabled,
+      setShuffleEnabled,
     }),
-    [currentDayIndex, variant, revealedIndices, addRevealedIndex]
+    [
+      currentDayIndex,
+      variant,
+      revealedIndices,
+      addRevealedIndex,
+      shuffleEnabled,
+    ]
   );
 
   return (

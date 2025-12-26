@@ -16,7 +16,13 @@ interface AdventCalendarProps {
 }
 
 export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
-  const { revealedIndices, addRevealedIndex, variant } = useAdventDay();
+  const {
+    revealedIndices,
+    addRevealedIndex,
+    variant,
+    shuffleEnabled,
+    setShuffleEnabled,
+  } = useAdventDay();
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hoveredTrack, setHoveredTrack] = useState<Track | null>(null);
@@ -63,18 +69,45 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
   const handleNext = useCallback(() => {
     if (playingIndex === null || sortedRevealedIndices.length === 0) return;
 
-    const currentPos = sortedRevealedIndices.indexOf(playingIndex);
-    if (currentPos === -1) {
-      // If current playing track is somehow not in revealed list (shouldn't happen normally if we only play revealed),
-      // just go to the first revealed.
-      // However, handlePlay adds it to revealed, so it should be there.
-      setPlayingIndex(sortedRevealedIndices[0]);
+    if (shuffleEnabled) {
+      const availableIndices = sortedRevealedIndices.filter(
+        (i) => i !== playingIndex
+      );
+      if (availableIndices.length > 0) {
+        const randomIndex =
+          availableIndices[Math.floor(Math.random() * availableIndices.length)];
+        setPlayingIndex(randomIndex);
+      } else {
+        setPlayingIndex(sortedRevealedIndices[0]);
+      }
     } else {
-      const nextPos = (currentPos + 1) % sortedRevealedIndices.length;
-      setPlayingIndex(sortedRevealedIndices[nextPos]);
+      const currentPos = sortedRevealedIndices.indexOf(playingIndex);
+      if (currentPos === -1) {
+        setPlayingIndex(sortedRevealedIndices[0]);
+      } else {
+        const isLastTrack = currentPos === sortedRevealedIndices.length - 1;
+        if (isLastTrack) {
+          setShuffleEnabled(true);
+          const availableIndices = sortedRevealedIndices.filter(
+            (i) => i !== playingIndex
+          );
+          if (availableIndices.length > 0) {
+            const randomIndex =
+              availableIndices[
+                Math.floor(Math.random() * availableIndices.length)
+              ];
+            setPlayingIndex(randomIndex);
+          } else {
+            setPlayingIndex(sortedRevealedIndices[0]);
+          }
+        } else {
+          const nextPos = currentPos + 1;
+          setPlayingIndex(sortedRevealedIndices[nextPos]);
+        }
+      }
     }
     setIsPlaying(true);
-  }, [playingIndex, sortedRevealedIndices]);
+  }, [playingIndex, sortedRevealedIndices, shuffleEnabled, setShuffleEnabled]);
 
   const handlePrevious = useCallback(() => {
     if (playingIndex === null || sortedRevealedIndices.length === 0) return;

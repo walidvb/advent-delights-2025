@@ -6,6 +6,7 @@ import { motion } from 'motion/react';
 import { Track, TrackVariant } from './types';
 import ReactPlayer from 'react-player';
 import { useAdventDay } from './AdventDayContext';
+import { cn } from '@/lib/utils';
 
 interface PlayerProps {
   track: Track | null;
@@ -28,7 +29,7 @@ export function Player({
   onNext,
   onPrevious,
 }: PlayerProps) {
-  const { variant } = useAdventDay();
+  const { variant, shuffleEnabled, setShuffleEnabled } = useAdventDay();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const playerRef = useRef<any>(null);
   const [progress, setProgress] = useState(0);
@@ -37,6 +38,7 @@ export function Player({
   const [lockedPlayback, setLockedPlayback] = useState<LockedPlayback | null>(
     null
   );
+  const [isBuffering, setIsBuffering] = useState(false);
 
   const currentVariantUrl = track
     ? variant === 'light'
@@ -113,6 +115,14 @@ export function Player({
     onNext();
   }, [onNext]);
 
+  const handleBuffer = useCallback(() => {
+    setIsBuffering(true);
+  }, []);
+
+  const handleBufferEnd = useCallback(() => {
+    setIsBuffering(false);
+  }, []);
+
   const handleProgress = useCallback(() => {
     if (!seeking) {
       setDuration(playerRef.current?.duration);
@@ -161,6 +171,8 @@ export function Player({
           onProgress={handleProgress}
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleEnded}
+          onWaiting={handleBuffer}
+          onPlaying={handleBufferEnd}
           width="1000"
           height="1000"
         />
@@ -219,7 +231,7 @@ export function Player({
             )}
 
             <div className="flex flex-1 flex-col items-center gap-3 w-ful">
-              <div className="flex items-center gap-4">
+              <div className="relative flex items-center gap-4">
                 <button
                   onClick={onPrevious}
                   className="text-zinc-600 transition-colors hover:text-zinc-900"
@@ -230,7 +242,9 @@ export function Player({
                   onClick={onPlayPause}
                   className="text-zinc-900 transition-colors hover:text-zinc-600"
                 >
-                  {isPlaying ? (
+                  {isPlaying && isBuffering ? (
+                    <LoaderIcon className="h-8 w-8 md:h-10 md:w-10 animate-spin" />
+                  ) : isPlaying ? (
                     <PauseIcon className="h-8 w-8 md:h-10 md:w-10" />
                   ) : (
                     <PlayIcon className="h-8 w-8 md:h-10 md:w-10" />
@@ -241,6 +255,16 @@ export function Player({
                   className="text-zinc-600 transition-colors hover:text-zinc-900"
                 >
                   <NextIcon className="h-7 w-7 md:h-7 md:w-7" />
+                </button>
+                <button
+                  onClick={() => setShuffleEnabled(!shuffleEnabled)}
+                  className={cn(
+                    'absolute right-0 translate-x-full pl-2 transition-colors cursor-pointer',
+                    shuffleEnabled ? 'text-zinc-900' : 'text-zinc-400'
+                  )}
+                  title={shuffleEnabled ? 'Disable shuffle' : 'Enable shuffle'}
+                >
+                  <ShuffleIcon className="h-5 w-5" />
                 </button>
               </div>
 
@@ -285,7 +309,13 @@ export function Player({
             )}
           </div>
         )}
-        <p className="text-sm text-zinc-500 shrink-0 md:absolute md:right-8 md:top-1/2 md:translate-y-[-50%]">
+        <p
+          className={cn(
+            'text-sm text-zinc-500 shrink-0',
+            'text-xs lg:absolute lg:right-8 lg:bottom-2',
+            ' xl:absolute xl:right-8 xl:top-1/2 xl:bottom-auto xl:translate-y-[-50%]'
+          )}
+        >
           Made in 2025, with <span className="text-red-500">🩶</span> by
           <a
             href="https://https://alinema-vanboetzelaer.framer.website"
@@ -340,6 +370,44 @@ function NextIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
       <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+    </svg>
+  );
+}
+
+function LoaderIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
+  );
+}
+
+function ShuffleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" />
+      <path d="m18 2 4 4-4 4" />
+      <path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2" />
+      <path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8" />
+      <path d="m18 14 4 4-4 4" />
     </svg>
   );
 }
