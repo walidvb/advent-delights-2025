@@ -13,7 +13,7 @@ async function fetchNoembedThumbnail(url: string): Promise<string | null> {
     const response = await fetch(
       `https://noembed.com/embed?url=${encodeURIComponent(url)}`
     );
-    const data = await response.json();
+    const data = (await response.json()) as { thumbnail_url?: string };
     return data.thumbnail_url || null;
   } catch (error) {
     console.error(`Error fetching noembed for ${url}:`, error);
