@@ -1,7 +1,9 @@
 'use server';
 
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { headers } from 'next/headers';
 import { calendarPath } from '@/lib/calendars';
+import { COVER_TYPES, coverProblem } from '@/lib/covers';
 import { sendEmail } from '@/lib/email';
 import { lookupTrackMetadata, type TrackMetadata } from '@/lib/track-metadata';
 import {
@@ -170,4 +172,65 @@ export async function saveSubmissionAction(
  */
 export async function lookupTrackAction(url: string): Promise<TrackMetadata | null> {
   return lookupTrackMetadata(url);
+}
+
+/**
+ * Stores one uploaded cover and answers with its object key, which the form
+ * then carries as a hidden field like any other answer.
+ *
+ * **The upload happens when the image is chosen, not when the form is
+ * submitted.** That is what makes an upload survive losing the race to a Day:
+ * the bytes are already in the bucket and the draft that comes back holds only
+ * the key, so a remounted form still knows where its cover is. It also means
+ * the Contributor sees the real stored image as their preview rather than a
+ * promise of one.
+ *
+ * Nothing is processed here. The browser has already shrunk the image; the
+ * Worker checks the declared type against the three we serve and the bytes
+ * against the size limit, and puts them in the bucket unaltered. Neither check
+ * reads the image — that is the point — so the type is the one the uploader
+ * claimed, and `/cover/` serves it back under that same claim with `nosniff`.
+ *
+ * The limits are re-checked here rather than trusted from the browser, and the
+ * caller has to hold the Calendar's Submit slug or one of its edit tokens —
+ * otherwise this is an open invitation to fill somebody else's bucket. In
+ * practice Next refuses a server-action body over 1MB before either check is
+ * reached; a shrunk cover is a few tens of kilobytes, so this only ever bites a
+ * forged request.
+ */
+export async function uploadCoverAction(
+  formData: FormData,
+): Promise<{ key: string } | { error: string }> {
+  const file = formData.get('cover');
+  if (!(file instanceof File)) return { error: 'No image arrived. Try choosing it again.' };
+
+  const problem = coverProblem(file);
+  if (problem) return { error: problem };
+
+  const submitSlug = String(formData.get('submit_slug') ?? '');
+  const editToken = String(formData.get('edit_token') ?? '');
+  const allowed = submitSlug
+    ? await getSubmitView(submitSlug)
+    : editToken
+      ? await getSubmission(editToken)
+      : null;
+  if (!allowed) return { error: 'This submission link is not valid.' };
+
+  // A key nobody can guess and nothing can collide with, so an upload never
+  // overwrites another and a replacement is simply a different object. The
+  // prefix keeps Contributors' images apart from the seeded `covers/` ones.
+  const key = `uploads/${crypto.randomUUID().replaceAll('-', '')}.${COVER_TYPES[file.type]}`;
+  const { env } = await getCloudflareContext({ async: true });
+  await env.BUCKET.put(key, await file.arrayBuffer(), {
+    httpMetadata: { contentType: file.type },
+  });
+
+  // ponytail: replacing or removing a cover leaves the old object in the
+  // bucket, as does abandoning the form before submitting — the row simply
+  // stops pointing at it. Deleting on replace would be wrong (the Submission
+  // still points at the old key until it is saved) and would not cover the
+  // abandoned-form case anyway, so nothing here deletes: a sweep of keys under
+  // `uploads/` that no `tracks.cover_key` names collects all three at once, the
+  // day the bucket is worth sweeping. Same call ticket 13 made for deletion.
+  return { key };
 }

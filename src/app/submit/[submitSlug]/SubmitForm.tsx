@@ -121,7 +121,11 @@ export function SubmitForm({ view }: { view: SubmitView }) {
           <input type="hidden" name="submit_slug" value={view.submitSlug} />
           <input type="hidden" name="day" value={day ?? ''} />
 
-          <SubmissionFields variants={view.variants} draft={state.draft ?? EMPTY} />
+          <SubmissionFields
+            variants={view.variants}
+            draft={state.draft ?? EMPTY}
+            auth={{ submit_slug: view.submitSlug }}
+          />
 
           <button type="submit" disabled={!day || pending} className={`${button} self-start`}>
             {pending ? 'Claiming…' : day ? `Claim Day ${day} and submit` : 'Pick a Day above'}

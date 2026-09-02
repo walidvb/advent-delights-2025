@@ -26,6 +26,11 @@ export async function GET(
   return new Response(await object.arrayBuffer(), {
     headers: {
       'content-type': object.httpMetadata?.contentType ?? 'application/octet-stream',
+      // Contributors' uploads are served from this origin, and their declared
+      // type is taken on trust rather than sniffed on the way in (see
+      // `covers.ts`). So the browser is told not to sniff either: a file lying
+      // about being an image stays a broken image instead of becoming markup.
+      'x-content-type-options': 'nosniff',
       etag: object.httpEtag,
       // A cover never changes under its key: a new image is a new upload.
       'cache-control': 'public, max-age=31536000, immutable',

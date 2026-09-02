@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { lookupTrackAction } from './actions';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { lookupTrackAction, uploadCoverAction } from './actions';
+import { COVER_TYPES, coverPath, coverProblem, resizeCover } from '@/lib/covers';
 import type { SubmissionDraft, TrackDraft, Variant } from '@/lib/submissions';
 import type { TrackMetadata } from '@/lib/track-metadata';
 
@@ -28,12 +29,20 @@ const optional = <span className="text-muted-foreground">(optional)</span>;
 /** How long after the last keystroke we go and look the URL up. */
 const SETTLE_MS = 600;
 
+/**
+ * Whichever secret this form already holds, shown to the upload endpoint so it
+ * only ever stores images for a Calendar the uploader can actually submit to.
+ */
+export type UploadAuth = { submit_slug: string } | { edit_token: string };
+
 export function SubmissionFields({
   variants,
   draft,
+  auth,
 }: {
   variants: Variant[];
   draft: SubmissionDraft;
+  auth: UploadAuth;
 }) {
   return (
     <>
@@ -79,7 +88,13 @@ export function SubmissionFields({
 
       {variants.map(({ variant, label }) => (
         // Absent for a Variant nobody has filled in yet, which is the blank form.
-        <TrackFields key={variant} variant={variant} label={label} track={draft.tracks[variant]} />
+        <TrackFields
+          key={variant}
+          variant={variant}
+          label={label}
+          track={draft.tracks[variant]}
+          auth={auth}
+        />
       ))}
     </>
   );
@@ -103,10 +118,12 @@ function TrackFields({
   variant,
   label,
   track,
+  auth,
 }: {
   variant: string;
   label: string;
   track: TrackDraft | undefined;
+  auth: UploadAuth;
 }) {
   const [values, setValues] = useState<Prefillable>({
     url: track?.url ?? '',
@@ -155,6 +172,54 @@ function TrackFields({
 
   const set = (key: keyof Prefillable) => (event: { target: { value: string } }) =>
     setValues((current) => ({ ...current, [key]: event.target.value }));
+
+  /**
+   * The uploaded cover: the key of an object already in the bucket, never the
+   * file itself. Choosing an image shrinks and uploads it there and then, so by
+   * the time the form is submitted there is nothing left to send — which is
+   * what lets an upload survive the remount a lost race causes, exactly as a
+   * typed field does.
+   *
+   * ponytail: submitting during the second or two an upload is in flight loses
+   * that upload — the key isn't in the field yet. The Contributor is told the
+   * upload is happening, and their edit link puts it right. Blocking the button
+   * means threading this state up through two forms for a one-second window.
+   */
+  const [cover, setCover] = useState({ key: track?.coverKey ?? '', busy: false, error: '' });
+
+  async function chooseCover(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    // Cleared straight away so choosing the same file again — after fixing a
+    // refusal, say — still counts as a change.
+    event.target.value = '';
+    if (!file) return;
+
+    const problem = coverProblem(file);
+    if (problem) return setCover((current) => ({ ...current, error: problem }));
+
+    setCover((current) => ({ ...current, busy: true, error: '' }));
+    try {
+      const body = new FormData();
+      for (const [name, value] of Object.entries(auth)) body.set(name, value);
+      // Shrunk here, on the device that took the photo. Nothing large is ever
+      // sent and nothing is processed at the other end.
+      body.set('cover', await resizeCover(file), 'cover');
+      const result = await uploadCoverAction(body);
+      // A failed replacement keeps whatever was already uploaded.
+      setCover((current) =>
+        'error' in result
+          ? { ...current, busy: false, error: result.error }
+          : { key: result.key, busy: false, error: '' },
+      );
+    } catch {
+      setCover((current) => ({
+        ...current,
+        busy: false,
+        error:
+          "That image couldn't be read. Try another one, or export it as JPEG or PNG and upload that.",
+      }));
+    }
+  }
 
   return (
     <fieldset className="mt-2 flex flex-col gap-3 rounded-md border border-border p-4">
@@ -221,10 +286,57 @@ function TrackFields({
           <img
             src={values.coverUrl}
             alt=""
-            className="h-16 w-16 shrink-0 rounded-md border border-border object-cover"
+            // Dimmed while an upload is in charge, because that is what shows.
+            className={`h-16 w-16 shrink-0 rounded-md border border-border object-cover ${
+              cover.key ? 'opacity-30' : ''
+            }`}
           />
         )}
       </div>
+
+      <div className="flex items-start gap-3">
+        <div className="flex min-w-0 flex-col gap-2">
+          <input
+            type="file"
+            accept={Object.keys(COVER_TYPES).join(',')}
+            onChange={chooseCover}
+            aria-label={`Upload a cover image for the ${label.toLowerCase()} track`}
+            className="max-w-full text-sm file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-2 file:text-sm"
+          />
+          {cover.key && (
+            <button
+              type="button"
+              onClick={() => setCover({ key: '', busy: false, error: '' })}
+              className="self-start text-xs underline"
+            >
+              Remove this upload
+            </button>
+          )}
+        </div>
+        {cover.key && (
+          // The preview is the stored object served back through `/cover/`, so
+          // what is on screen is exactly what the Calendar will show.
+          // eslint-disable-next-line @next/next/no-img-element -- an upload of unknown shape, and only a preview.
+          <img
+            src={coverPath(cover.key)}
+            alt=""
+            className="h-16 w-16 shrink-0 rounded-md border border-primary object-cover"
+          />
+        )}
+      </div>
+      <p
+        className={`-mt-1 text-xs ${cover.error ? 'text-destructive' : 'text-muted-foreground'}`}
+        role={cover.error ? 'alert' : 'status'}
+      >
+        {cover.error ||
+          (cover.busy
+            ? 'Shrinking and uploading your image…'
+            : cover.key
+              ? 'Your upload is what the Calendar will show. Remove it and the image above comes back.'
+              : 'Or upload your own — JPEG, PNG or WebP under 5MB. It is shrunk on your device before it is sent, and it wins over the one above.')}
+      </p>
+      {/* The key of what was uploaded, carried with the rest of the answers. */}
+      <input type="hidden" name={`${variant}.cover_key`} value={cover.key} />
 
       <label htmlFor={`${variant}.description`} className="text-sm">
         Why you chose it

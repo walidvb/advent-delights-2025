@@ -1,5 +1,6 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { DAYS_IN_CALENDAR } from '@/app/advent/reveal';
+import { coverPath } from './covers';
 import type { Contributor, Day, TrackVariant } from '@/app/advent/types';
 
 /**
@@ -36,14 +37,6 @@ function coverImage(row: TrackRow, day: number) {
   if (row.cover_key) return coverPath(row.cover_key);
   return row.cover_url || placeholderCover(day);
 }
-
-/**
- * Uploaded covers are served by the application from R2, never from the
- * bucket's own URL. The key becomes the path after `/cover/`, a segment at a
- * time, so a filename carrying a `#` or a space still addresses its object.
- */
-export const coverPath = (key: string) =>
-  `/cover/${key.split('/').map(encodeURIComponent).join('/')}`;
 
 type TrackRow = {
   slug: string;

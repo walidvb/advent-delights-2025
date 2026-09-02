@@ -55,8 +55,15 @@ export type TrackDraft = {
   artist: string;
   description: string;
   buyLink: string;
-  /** The looked-up cover, and only ever that. An uploaded one is `cover_key`. */
+  /** The looked-up cover: a URL on somebody else's host. */
   coverUrl: string;
+  /**
+   * The uploaded cover's object key, empty for none. Carried as a form field
+   * like every other answer, so it survives a lost race the same way — the
+   * image is already in the bucket by the time the form is submitted, and this
+   * is only the note of where it went.
+   */
+  coverKey: string;
 };
 
 async function db() {
@@ -103,6 +110,15 @@ export function readDraft(formData: FormData, variants: Variant[]): SubmissionDr
           description: text(formData.get(`${variant}.description`), PROSE),
           buyLink: text(formData.get(`${variant}.buy_link`), LINK),
           coverUrl: text(formData.get(`${variant}.cover_url`), LINK),
+          // Deliberately unchecked. A forged key can only point a Contributor's
+          // own Day at another cover — every object under `/cover/` is public to
+          // anyone holding a Slug — or at nothing, giving them a broken tile
+          // rather than the fallback, which is their own doing and their own
+          // edit link to fix. `coverPath` encodes it a segment at a time, so it
+          // cannot escape the route or become markup. Requiring the `uploads/`
+          // prefix was the alternative and was rejected: it would silently wipe
+          // the seeded `covers/…` keys the moment one of those is ever edited.
+          coverKey: text(formData.get(`${variant}.cover_key`), SHORT),
         },
       ]),
     ),
@@ -216,18 +232,21 @@ function trackUpsert(
   variant: string,
   track: TrackDraft,
 ) {
-  // `cover_url` is the looked-up cover and is written from the form, because a
-  // Contributor can edit or clear it like any other field. `cover_key` — the
-  // uploaded image, ticket 12's — is never named here, so an edit cannot wipe
-  // an upload it knows nothing about.
+  // Both covers are written from the form, and the form carries both: the
+  // looked-up URL as a field a Contributor can edit, the uploaded key as a
+  // hidden one they set by uploading and clear by removing. The form is
+  // therefore the whole truth about a Track's cover — which is what makes
+  // removing an upload fall back to the looked-up image rather than to nothing.
+  // The two are stored side by side and never overwrite each other;
+  // `coverImage` decides which one is shown.
   return database
     .prepare(
-      `insert into tracks (submission_id, variant, url, title, artist, description, buy_link, cover_url)
-       values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+      `insert into tracks (submission_id, variant, url, title, artist, description, buy_link, cover_url, cover_key)
+       values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
        on conflict (submission_id, variant) do update set
          url = excluded.url, title = excluded.title, artist = excluded.artist,
          description = excluded.description, buy_link = excluded.buy_link,
-         cover_url = excluded.cover_url`,
+         cover_url = excluded.cover_url, cover_key = excluded.cover_key`,
     )
     .bind(
       submissionId,
@@ -238,6 +257,7 @@ function trackUpsert(
       track.description,
       track.buyLink,
       track.coverUrl || null,
+      track.coverKey || null,
     );
 }
 
@@ -300,6 +320,7 @@ const emptyTrack = (): TrackDraft => ({
   description: '',
   buyLink: '',
   coverUrl: '',
+  coverKey: '',
 });
 
 export type OwnSubmission = {
@@ -345,7 +366,7 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
     readVariants(submission.calendar_id),
     database
       .prepare(
-        `select variant, url, title, artist, description, buy_link, cover_url
+        `select variant, url, title, artist, description, buy_link, cover_url, cover_key
            from tracks where submission_id = ?1`,
       )
       .bind(submission.id)
@@ -357,6 +378,7 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
         description: string;
         buy_link: string;
         cover_url: string | null;
+        cover_key: string | null;
       }>(),
   ]);
 
@@ -383,6 +405,7 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
                   description: track.description,
                   buyLink: track.buy_link,
                   coverUrl: track.cover_url ?? '',
+                  coverKey: track.cover_key ?? '',
                 }
               : emptyTrack(),
           ];

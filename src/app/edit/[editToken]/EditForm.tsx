@@ -39,7 +39,11 @@ export function EditForm({
         </p>
       )}
 
-      <SubmissionFields variants={variants} draft={state.draft ?? draft} />
+      <SubmissionFields
+        variants={variants}
+        draft={state.draft ?? draft}
+        auth={{ edit_token: editToken }}
+      />
 
       <button type="submit" disabled={pending} className={`${button} self-start`}>
         {pending ? 'Saving…' : 'Save changes'}

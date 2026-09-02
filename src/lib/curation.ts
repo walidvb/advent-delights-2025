@@ -1,6 +1,7 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { claimableDays, DAYS_IN_CALENDAR } from '@/app/advent/reveal';
-import { coverPath, purgeCalendarPayload } from './calendar-payload';
+import { purgeCalendarPayload } from './calendar-payload';
+import { coverPath } from './covers';
 import { getOwnedCalendar } from './calendars';
 
 /**
