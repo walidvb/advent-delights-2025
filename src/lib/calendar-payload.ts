@@ -42,7 +42,7 @@ function coverImage(row: TrackRow, day: number) {
  * bucket's own URL. The key becomes the path after `/cover/`, a segment at a
  * time, so a filename carrying a `#` or a space still addresses its object.
  */
-const coverPath = (key: string) =>
+export const coverPath = (key: string) =>
   `/cover/${key.split('/').map(encodeURIComponent).join('/')}`;
 
 type TrackRow = {

@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { getCurator } from '@/lib/auth';
 import { createCalendar, updateCalendar, type ChosenSlug } from '@/lib/calendars';
+import { deleteSubmission } from '@/lib/curation';
 
 export async function createCalendarAction(formData: FormData) {
   const curator = await getCurator();
@@ -43,4 +44,19 @@ export async function updateCalendarAction(formData: FormData) {
   });
 
   redirect(result ? dashboardWithSlugNotice(result) : '/dashboard');
+}
+
+/**
+ * Removes the Submission on one Day, unseen. Ownership is checked inside
+ * `deleteSubmission`, so a forged id in this form deletes nothing and gets the
+ * same answer as a mistyped one.
+ */
+export async function deleteSubmissionAction(formData: FormData) {
+  const curator = await getCurator();
+  if (!curator) redirect('/sign-in');
+
+  const id = String(formData.get('id') ?? '');
+  await deleteSubmission(id, curator.id, Number(formData.get('day')));
+
+  redirect(`/dashboard/calendar/${id}`);
 }

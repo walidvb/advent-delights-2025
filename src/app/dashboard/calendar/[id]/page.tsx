@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getCurator } from '@/lib/auth';
 import { getOwnedCalendar } from '@/lib/calendars';
+import { getClaims } from '@/lib/curation';
 import { updateCalendarAction } from '@/app/dashboard/actions';
 
 const field =
@@ -13,8 +14,12 @@ export default async function CalendarSettingsPage({ params }: { params: Promise
   if (!curator) redirect('/sign-in');
 
   // Someone else's Calendar is indistinguishable from one that doesn't exist.
-  const calendar = await getOwnedCalendar((await params).id, curator.id);
-  if (!calendar) notFound();
+  const id = (await params).id;
+  const [calendar, claims] = await Promise.all([
+    getOwnedCalendar(id, curator.id),
+    getClaims(id, curator.id),
+  ]);
+  if (!calendar || !claims) notFound();
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 p-6">
@@ -26,7 +31,41 @@ export default async function CalendarSettingsPage({ params }: { params: Promise
         {calendar.name} <span className="text-2xl text-muted-foreground">{calendar.year}</span>
       </h1>
 
-      <form action={updateCalendarAction} className="flex flex-col gap-3">
+      <section className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 className="font-title text-2xl">Who has claimed what</h2>
+          <p className="text-sm text-muted-foreground">
+            {claims.claimedCount} of {claims.days.length} Days claimed
+          </p>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Names only. Nothing anyone submitted is on this page, or in what your browser was
+          sent to build it — December should still be a surprise for you too.
+        </p>
+
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-2">
+          {claims.days.map((day) => (
+            <li key={day.day} className="rounded-md border border-border p-3 text-sm">
+              <span className="font-title text-lg">{day.day}</span>{' '}
+              {day.claimedBy ? (
+                <Link
+                  href={`/dashboard/calendar/${calendar.id}/day/${day.day}`}
+                  className="underline"
+                >
+                  {day.claimedBy}
+                </Link>
+              ) : (
+                <span className="text-muted-foreground">
+                  {day.claimable ? 'free' : 'empty — opened'}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <form action={updateCalendarAction} className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="font-title text-2xl">Settings</h2>
         <input type="hidden" name="id" value={calendar.id} />
 
         <label htmlFor="name" className="text-sm">
