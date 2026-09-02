@@ -42,6 +42,25 @@ function sixDigitCode() {
   return String(n % 1e6).padStart(6, '0');
 }
 
+/**
+ * In local development `000000` always signs you in, so getting to the
+ * dashboard doesn't mean fishing a code out of the server log every time.
+ *
+ * `process.env.NODE_ENV` is inlined at build time, so this branch is not
+ * present in a production bundle at all: it cannot be switched back on by an
+ * environment variable, a secret, or a misconfigured deploy. `npm run preview`
+ * builds in production mode too, so the shortcut is `next dev` only.
+ *
+ * It skips the code, not the flow — a pending, unexpired, unlocked request is
+ * still required, and the account is still created and the session still
+ * written exactly as they are for a real code.
+ */
+const DEV_CODE = '000000';
+
+function devCodeAccepted(typed: string) {
+  return process.env.NODE_ENV !== 'production' && typed.trim() === DEV_CODE;
+}
+
 function normaliseEmail(raw: string) {
   const email = raw.trim().toLowerCase();
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
@@ -115,7 +134,7 @@ export async function verifySignInCode(typed: string): Promise<'ok' | SignInFail
   if (!pending || pending.expires_at < Date.now()) return forget('expired');
   if (pending.attempts >= MAX_ATTEMPTS) return forget('locked');
 
-  if ((await sha256(`${id}:${typed.trim()}`)) !== pending.code_hash) {
+  if (!devCodeAccepted(typed) && (await sha256(`${id}:${typed.trim()}`)) !== pending.code_hash) {
     await database.prepare('update sign_in_codes set attempts = attempts + 1 where id = ?1').bind(id).run();
     return pending.attempts + 1 >= MAX_ATTEMPTS ? forget('locked') : 'invalid';
   }
