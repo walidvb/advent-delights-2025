@@ -55,6 +55,8 @@ export type TrackDraft = {
   artist: string;
   description: string;
   buyLink: string;
+  /** The looked-up cover, and only ever that. An uploaded one is `cover_key`. */
+  coverUrl: string;
 };
 
 async function db() {
@@ -100,6 +102,7 @@ export function readDraft(formData: FormData, variants: Variant[]): SubmissionDr
           artist: text(formData.get(`${variant}.artist`), SHORT),
           description: text(formData.get(`${variant}.description`), PROSE),
           buyLink: text(formData.get(`${variant}.buy_link`), LINK),
+          coverUrl: text(formData.get(`${variant}.cover_url`), LINK),
         },
       ]),
     ),
@@ -136,6 +139,9 @@ export function draftProblem(draft: SubmissionDraft, variants: Variant[]): strin
     const buyLink = safeLink(track.buyLink);
     if (buyLink === null) return `The ${which} track's buy link doesn't look like a web address.`;
     track.buyLink = buyLink;
+    const coverUrl = safeLink(track.coverUrl);
+    if (coverUrl === null) return `The ${which} track's cover image isn't a web address.`;
+    track.coverUrl = coverUrl;
   }
   return null;
 }
@@ -210,15 +216,18 @@ function trackUpsert(
   variant: string,
   track: TrackDraft,
 ) {
-  // The cover columns are left alone deliberately: tickets 11 and 12 own them,
-  // and an edit must not wipe an uploaded cover it knows nothing about.
+  // `cover_url` is the looked-up cover and is written from the form, because a
+  // Contributor can edit or clear it like any other field. `cover_key` — the
+  // uploaded image, ticket 12's — is never named here, so an edit cannot wipe
+  // an upload it knows nothing about.
   return database
     .prepare(
-      `insert into tracks (submission_id, variant, url, title, artist, description, buy_link)
-       values (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+      `insert into tracks (submission_id, variant, url, title, artist, description, buy_link, cover_url)
+       values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
        on conflict (submission_id, variant) do update set
          url = excluded.url, title = excluded.title, artist = excluded.artist,
-         description = excluded.description, buy_link = excluded.buy_link`,
+         description = excluded.description, buy_link = excluded.buy_link,
+         cover_url = excluded.cover_url`,
     )
     .bind(
       submissionId,
@@ -228,6 +237,7 @@ function trackUpsert(
       track.artist,
       track.description,
       track.buyLink,
+      track.coverUrl || null,
     );
 }
 
@@ -289,6 +299,7 @@ const emptyTrack = (): TrackDraft => ({
   artist: '',
   description: '',
   buyLink: '',
+  coverUrl: '',
 });
 
 export type OwnSubmission = {
@@ -331,7 +342,7 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
     readVariants(submission.calendar_id),
     database
       .prepare(
-        `select variant, url, title, artist, description, buy_link
+        `select variant, url, title, artist, description, buy_link, cover_url
            from tracks where submission_id = ?1`,
       )
       .bind(submission.id)
@@ -342,6 +353,7 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
         artist: string;
         description: string;
         buy_link: string;
+        cover_url: string | null;
       }>(),
   ]);
 
@@ -366,6 +378,7 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
                   artist: track.artist,
                   description: track.description,
                   buyLink: track.buy_link,
+                  coverUrl: track.cover_url ?? '',
                 }
               : emptyTrack(),
           ];

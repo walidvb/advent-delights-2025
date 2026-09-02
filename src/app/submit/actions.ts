@@ -1,6 +1,7 @@
 'use server';
 
 import { calendarPath } from '@/lib/calendars';
+import { lookupTrackMetadata, type TrackMetadata } from '@/lib/track-metadata';
 import {
   createSubmission,
   draftProblem,
@@ -104,4 +105,15 @@ export async function saveSubmissionAction(
 
   await updateSubmission(editToken, draft);
   return { attempt, saved: true, draft };
+}
+
+/**
+ * A guess at a Track's title, artist and artwork from its URL, for prefilling
+ * the form. Never throws and never refuses: `null` means "nothing to suggest",
+ * which is what an unrecognised source, an unreachable one and a private link
+ * all look like from here. The Contributor types the fields themselves in
+ * exactly the way they always could, and nothing on screen changes.
+ */
+export async function lookupTrackAction(url: string): Promise<TrackMetadata | null> {
+  return lookupTrackMetadata(url);
 }
