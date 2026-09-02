@@ -1,6 +1,8 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { calendarPath } from '@/lib/calendars';
+import { sendEmail } from '@/lib/email';
 import { lookupTrackMetadata, type TrackMetadata } from '@/lib/track-metadata';
 import {
   createSubmission,
@@ -74,10 +76,58 @@ export async function submitAction(
     );
   }
 
-  return {
-    attempt: previous.attempt + 1,
-    claimed: { editPath: editPath(result.editToken), calendarPath: calendarPath(result.calendarSlug) },
+  const claimed = {
+    editPath: editPath(result.editToken),
+    calendarPath: calendarPath(result.calendarSlug),
   };
+
+  // The Submission is already written and the cache already purged. The receipt
+  // comes after, and cannot unmake any of it — see `sendReceipt`.
+  await sendReceipt(draft.email, view.calendarName, claimed);
+
+  return { attempt: previous.attempt + 1, claimed };
+}
+
+/**
+ * The one message a Contributor ever receives: their own edit link, and the
+ * Calendar's, so closing the tab doesn't cost them the ability to fix a typo.
+ * Giving an address is optional, and with none given nothing is sent.
+ *
+ * **Never throws.** It runs only once the Submission is saved, and a provider
+ * that refuses must not undo a claim the Contributor already has — the same two
+ * links are on screen either way. So the failure is logged and swallowed.
+ *
+ * ponytail: absolute links are built from the incoming Host, as the dashboard
+ * does. A forged Host only misdirects the forger's own receipt to their own
+ * address; pin a configured base URL if that ever stops being true.
+ */
+async function sendReceipt(
+  email: string,
+  calendarName: string,
+  claimed: { editPath: string; calendarPath: string },
+): Promise<void> {
+  if (!email) return;
+  try {
+    const incoming = await headers();
+    const base = `${incoming.get('x-forwarded-proto') ?? 'http'}://${incoming.get('host')}`;
+    await sendEmail({
+      to: email,
+      subject: `Your Day in ${calendarName}`,
+      text: [
+        `Thanks for contributing to ${calendarName}.`,
+        '',
+        'Change your submission any time with this link — keep it, it is the only way back in:',
+        base + claimed.editPath,
+        '',
+        'The Calendar itself, for December:',
+        base + claimed.calendarPath,
+        '',
+        "This is the only message we'll send you.",
+      ].join('\n'),
+    });
+  } catch (error) {
+    console.error('[receipt] submission saved but the receipt did not send', error);
+  }
 }
 
 /** What the edit form knows after a save: the same keep-what-you-typed shape. */
