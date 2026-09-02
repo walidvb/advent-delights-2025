@@ -15,6 +15,12 @@
  *
  * The source spreadsheet is messy in ways handled deliberately here; see the
  * comments on COLUMNS and resolveCover.
+ *
+ * `src/data.csv` was deleted in ticket 09, which made the database the only
+ * source. To run this again — the `--remote` run is still outstanding — bring
+ * the spreadsheet back first:
+ *
+ *   git show 99de32d:src/data.csv > src/data.csv
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';

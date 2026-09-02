@@ -285,9 +285,9 @@ export function Player({
         {day && (
           <div>
             <span className="text-zinc-500 text-sm">Curated by:</span> <br />{' '}
-            {day.participantLink ? (
+            {day.contributorLink ? (
               <a
-                href={day.participantLink}
+                href={day.contributorLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-teal-600 hover:text-teal-700 hover:underline"

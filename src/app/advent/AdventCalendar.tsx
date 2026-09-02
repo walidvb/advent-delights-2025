@@ -7,15 +7,15 @@ import { CalendarGrid } from './CalendarGrid';
 import { DetailsCard } from './DetailsCard';
 import { Player } from './Player';
 import { AboutSidebar } from './AboutSidebar';
-import { Day, Participant } from './types';
+import { Day, Contributor } from './types';
 import { useAdventDay } from './AdventDayContext';
 
 interface AdventCalendarProps {
   days: Day[];
-  participants: Participant[];
+  contributors: Contributor[];
 }
 
-export function AdventCalendar({ days, participants }: AdventCalendarProps) {
+export function AdventCalendar({ days, contributors }: AdventCalendarProps) {
   const {
     openedIndices,
     addOpenedIndex,
@@ -203,7 +203,7 @@ export function AdventCalendar({ days, participants }: AdventCalendarProps) {
       <AboutSidebar
         isOpen={isAboutOpen}
         onClose={() => setIsAboutOpen(false)}
-        participants={participants}
+        contributors={contributors}
       />
     </div>
   );

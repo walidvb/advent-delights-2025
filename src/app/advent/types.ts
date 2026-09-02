@@ -35,31 +35,15 @@ export interface Track {
 export interface Day {
   dayIndex: number;
   creditedTo: string;
-  participantLink: string;
+  contributorLink: string;
   tracks: Partial<Record<TrackVariant, Track>>;
 }
 
-export interface CSVRow {
-  Timestamp: string;
-  'Credited to': string;
-  '1 Track URL': string;
-  '1 Track Description': string;
-  '1 Track buy link': string;
-  '2 Track URL': string;
-  '2 Track Description': string;
-  '2 Track buy link': string;
-  '1 Track cover image': string;
-  '2 Track cover image': string;
-  'Link to you (if you want one!)': string;
-  'Track 1 cover id': string;
-  'Track 2 cover id': string;
-  'Artist name 1': string;
-  'Track name 1': string;
-  'Artist Name 2': string;
-  'Track name 2': string;
-}
-
-export interface Participant {
+/**
+ * Someone who made a Submission. Contributors have no accounts: the name is
+ * free text they typed, and the link to themselves is optional.
+ */
+export interface Contributor {
   name: string;
   link: string;
 }

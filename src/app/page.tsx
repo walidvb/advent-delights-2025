@@ -1,21 +1,13 @@
-import { AdventCalendar } from './advent/AdventCalendar';
-import { AdventDayProvider } from './advent/AdventDayContext';
-import { getDays, getParticipants } from './advent/server-tracks';
-import { CalendarIdentity } from './advent/types';
+import { redirect } from 'next/navigation';
 
 /**
- * The one Calendar this site serves, until ticket 09 addresses Calendars by
- * Slug and this comes from the database.
+ * The root is no longer one community's Calendar — Calendars live at their own
+ * Slug now. Nothing lists Calendars (a browse page is deliberately out of
+ * scope), so the only thing anyone can do from the bare root is make one:
+ * `/dashboard` shows a Curator theirs and sends everybody else to sign in.
+ *
+ * Whenever a browse page for public Calendars does exist, it replaces this.
  */
-const CALENDAR: CalendarIdentity = { slug: 'advent-2025', year: 2025 };
-
-export default async function Home() {
-  const days = await getDays();
-  const participants = getParticipants();
-
-  return (
-    <AdventDayProvider calendar={CALENDAR}>
-      <AdventCalendar days={days} participants={participants} />
-    </AdventDayProvider>
-  );
+export default function Home() {
+  redirect('/dashboard');
 }

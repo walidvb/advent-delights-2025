@@ -1,4 +1,5 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { purgeCalendarPayload } from './calendar-payload';
 
 /**
  * Calendar management: create, list and configure a Curator's Calendars.
@@ -176,6 +177,11 @@ export async function updateCalendar(
     )
     .bind(id, curatorId, name, fields.description.trim(), slug.slug, fields.isPublic ? 1 : 0)
     .run();
+
+  // The Calendar has been written to, so its cached payload is stale. Both
+  // Slugs are purged because an edited Slug leaves the old one cached.
+  await purgeCalendarPayload(existing.slug);
+  if (slug.slug !== existing.slug) await purgeCalendarPayload(slug.slug);
 
   return slug;
 }
