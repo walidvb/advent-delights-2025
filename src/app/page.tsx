@@ -1,14 +1,14 @@
 import { AdventCalendar } from './advent/AdventCalendar';
 import { AdventDayProvider } from './advent/AdventDayContext';
-import { getTracks, getParticipants } from './advent/server-tracks';
+import { getDays, getParticipants } from './advent/server-tracks';
 
 export default async function Home() {
-  const tracks = await getTracks();
+  const days = await getDays();
   const participants = getParticipants();
 
   return (
     <AdventDayProvider>
-      <AdventCalendar tracks={tracks} participants={participants} />
+      <AdventCalendar days={days} participants={participants} />
     </AdventDayProvider>
   );
 }

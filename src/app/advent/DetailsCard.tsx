@@ -3,45 +3,37 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
-import { Track } from './types';
+import { Day, Track } from './types';
 import { useAdventDay } from './AdventDayContext';
 
 interface DetailsCardProps {
-  track: Track | null;
+  day: Day | null;
   position: { x: number; y: number };
   isPlaying: boolean;
   onPlay: () => void;
-  mobileTrack: Track | null;
+  mobileDay: Day | null;
   onCloseMobile: () => void;
   onMobilePlay: () => void;
   isMobilePlaying: boolean;
 }
 
 export function DetailsCard({
-  track,
+  day,
   position,
   isPlaying,
   onPlay,
-  mobileTrack,
+  mobileDay,
   onCloseMobile,
   onMobilePlay,
   isMobilePlaying,
 }: DetailsCardProps) {
   const { variant } = useAdventDay();
 
-  const getTrackDetails = (t: Track) => ({
-    coverImage: variant === 'light' ? t.lightCoverImage : t.heavyCoverImage,
-    creditedTo: variant === 'light' ? t.lightCreditedTo : t.heavyCreditedTo,
-    description: variant === 'light' ? t.lightDescription : t.heavyDescription,
-    artistName: variant === 'light' ? t.lightArtistName : t.heavyArtistName,
-    trackName: variant === 'light' ? t.lightTrackName : t.heavyTrackName,
-  });
-
   const cardRef = useRef<HTMLDivElement>(null);
   const [cardPosition, setCardPosition] = useState({ left: 0, top: 0 });
 
   useLayoutEffect(() => {
-    if (!track || typeof window === 'undefined') return;
+    if (!day || typeof window === 'undefined') return;
 
     const padding = 16;
     const cardWidth = cardRef.current?.offsetWidth ?? 320;
@@ -65,13 +57,13 @@ export function DetailsCard({
     }
 
     setCardPosition({ left, top });
-  }, [position.x, position.y, track]);
+  }, [position.x, position.y, day]);
 
   return (
     <>
       {/* Desktop hover card */}
       <AnimatePresence>
-        {track && (
+        {day && (
           <motion.div
             ref={cardRef}
             initial={{ opacity: 0, scale: 0.9 }}
@@ -82,8 +74,9 @@ export function DetailsCard({
             style={cardPosition}
           >
             <CardContent
-              {...getTrackDetails(track)}
-              dayIndex={track.dayIndex}
+              track={day.tracks[variant]}
+              creditedTo={day.creditedTo}
+              dayIndex={day.dayIndex}
             />
           </motion.div>
         )}
@@ -91,7 +84,7 @@ export function DetailsCard({
 
       {/* Mobile fullscreen card */}
       <AnimatePresence>
-        {mobileTrack && (
+        {mobileDay && (
           <motion.div
             initial={{ opacity: 0, y: '100%' }}
             animate={{ opacity: 1, y: 0 }}
@@ -107,8 +100,9 @@ export function DetailsCard({
             </button>
             <div className="p-6 pb-32">
               <CardContent
-                {...getTrackDetails(mobileTrack)}
-                dayIndex={mobileTrack.dayIndex}
+                track={mobileDay.tracks[variant]}
+                creditedTo={mobileDay.creditedTo}
+                dayIndex={mobileDay.dayIndex}
               />
               <button
                 onClick={onMobilePlay}
@@ -135,20 +129,16 @@ export function DetailsCard({
 }
 
 function CardContent({
-  coverImage,
+  track,
   creditedTo,
-  description,
-  artistName,
-  trackName,
   dayIndex,
 }: {
-  coverImage: string;
+  track: Track | undefined;
   creditedTo: string;
-  description: string;
-  artistName: string;
-  trackName: string;
   dayIndex: number;
 }) {
+  const { coverImage, description, artistName, trackName } = track ?? {};
+
   return (
     <>
       <div className="relative mb-2 aspect-square w-full overflow-hidden rounded-[4px]">

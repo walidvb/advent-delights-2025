@@ -1,25 +1,32 @@
 export type TrackVariant = 'light' | 'heavy';
 
+/**
+ * One piece of music: where to hear it, who made it, what it's called, why the
+ * Contributor chose it, and where to buy it. Always a link to somewhere else —
+ * nothing is hosted here.
+ */
 export interface Track {
+  url: string;
+  trackName: string;
+  artistName: string;
+  description: string;
+  buyLink: string;
+  coverImage: string;
+}
+
+/**
+ * A position from 1 to 25 in the Calendar, holding one Track per Variant.
+ *
+ * Tracks are keyed by Variant rather than kept in prefixed fields, so a
+ * consumer reads `day.tracks[variant]` instead of branching field by field.
+ * The map is partial and carries no count: a Day may hold one Track, two, or
+ * none at all when nobody has claimed it.
+ */
+export interface Day {
   dayIndex: number;
   creditedTo: string;
   participantLink: string;
-  // Light track (1)
-  lightCreditedTo: string;
-  lightTrackUrl: string;
-  lightDescription: string;
-  lightBuyLink: string;
-  lightCoverImage: string;
-  lightArtistName: string;
-  lightTrackName: string;
-  // Heavy track (2)
-  heavyCreditedTo: string;
-  heavyTrackUrl: string;
-  heavyDescription: string;
-  heavyBuyLink: string;
-  heavyCoverImage: string;
-  heavyArtistName: string;
-  heavyTrackName: string;
+  tracks: Partial<Record<TrackVariant, Track>>;
 }
 
 export interface CSVRow {

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import Papa from 'papaparse';
-import { CSVRow, Track, Participant } from './types';
+import { CSVRow, Day, Participant } from './types';
 
 function getPlaceholderImage(seed: number): string {
   return `https://picsum.photos/seed/advent${seed}/400/400`;
@@ -38,7 +38,15 @@ async function resolveCoverImage(
   return getPlaceholderImage(day);
 }
 
-export async function getTracks(): Promise<Track[]> {
+/**
+ * Cover files on disk are all `.webp` and carry no spaces, whatever the
+ * spreadsheet says.
+ */
+function coverPath(cover: string): string {
+  return cover.replace(/\s/g, '-').replace(/\.\w+$/, '.webp');
+}
+
+export async function getDays(): Promise<Day[]> {
   const csvPath = path.join(process.cwd(), 'src/data.csv');
   const fileContent = fs.readFileSync(csvPath, 'utf-8');
 
@@ -49,7 +57,7 @@ export async function getTracks(): Promise<Track[]> {
 
   const csvRows = result.data;
 
-  const trackPromises = Array.from({ length: 25 }, async (_, i) => {
+  const dayPromises = Array.from({ length: 25 }, async (_, i) => {
     const day = i + 1;
     const rowIndex = i;
     const row = csvRows[rowIndex] || {};
@@ -62,30 +70,28 @@ export async function getTracks(): Promise<Track[]> {
       dayIndex: day - 1,
       creditedTo: row['Credited to'],
       participantLink: row['Link to you (if you want one!)'] || '',
-      // Light track (1)
-      lightCreditedTo: row['Credited to'],
-      lightTrackUrl: row['1 Track URL'],
-      lightDescription: row['1 Track Description'],
-      lightBuyLink: row['1 Track buy link'],
-      lightCoverImage: lightCoverImage
-        .replace(/\.\w+$/, '.webp')
-        .replace(/\s/g, '-'),
-      lightArtistName: (row['Artist name 1'] || '').trim(),
-      lightTrackName: (row['Track name 1'] || '').trim(),
-      // Heavy track (2)
-      heavyCreditedTo: row['Credited to'],
-      heavyTrackUrl: row['2 Track URL'],
-      heavyDescription: row['2 Track Description'],
-      heavyBuyLink: row['2 Track buy link'],
-      heavyCoverImage: heavyCoverImage
-        .replace(/\s/g, '-')
-        .replace(/\.\w+$/, '.webp'),
-      heavyArtistName: (row['Artist Name 2'] || '').trim(),
-      heavyTrackName: (row['Track name 2'] || '').trim(),
+      tracks: {
+        light: {
+          url: row['1 Track URL'],
+          trackName: (row['Track name 1'] || '').trim(),
+          artistName: (row['Artist name 1'] || '').trim(),
+          description: row['1 Track Description'],
+          buyLink: row['1 Track buy link'],
+          coverImage: coverPath(lightCoverImage),
+        },
+        heavy: {
+          url: row['2 Track URL'],
+          trackName: (row['Track name 2'] || '').trim(),
+          artistName: (row['Artist Name 2'] || '').trim(),
+          description: row['2 Track Description'],
+          buyLink: row['2 Track buy link'],
+          coverImage: coverPath(heavyCoverImage),
+        },
+      },
     };
   });
 
-  return Promise.all(trackPromises);
+  return Promise.all(dayPromises);
 }
 
 export function getParticipants(): Participant[] {

@@ -3,7 +3,7 @@
 
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Track, TrackVariant } from './types';
+import { Day, TrackVariant } from './types';
 import dynamic from 'next/dynamic';
 import type ReactPlayerType from 'react-player';
 import type { OnProgressProps } from 'react-player/base';
@@ -16,7 +16,7 @@ import { useAdventDay } from './AdventDayContext';
 import { cn } from '@/lib/utils';
 
 interface PlayerProps {
-  track: Track | null;
+  day: Day | null;
   isPlaying: boolean;
   onPlayPause: () => void;
   onNext: () => void;
@@ -30,7 +30,7 @@ interface LockedPlayback {
 }
 
 export function Player({
-  track,
+  day,
   isPlaying,
   onPlayPause,
   onNext,
@@ -46,25 +46,21 @@ export function Player({
   );
   const [isBuffering, setIsBuffering] = useState(false);
 
-  const currentVariantUrl = track
-    ? variant === 'light'
-      ? track.lightTrackUrl
-      : track.heavyTrackUrl
-    : undefined;
+  const currentVariantUrl = day?.tracks[variant]?.url;
 
   useEffect(() => {
-    if (track && currentVariantUrl) {
+    if (day && currentVariantUrl) {
       const shouldLock =
-        !lockedPlayback || lockedPlayback.dayIndex !== track.dayIndex;
+        !lockedPlayback || lockedPlayback.dayIndex !== day.dayIndex;
       if (shouldLock) {
         setLockedPlayback({
-          dayIndex: track.dayIndex,
+          dayIndex: day.dayIndex,
           variant,
           url: currentVariantUrl,
         });
       }
     }
-  }, [track, currentVariantUrl, variant, lockedPlayback]);
+  }, [day, currentVariantUrl, variant, lockedPlayback]);
 
   useEffect(() => {
     if (!isPlaying && lockedPlayback && currentVariantUrl) {
@@ -82,7 +78,7 @@ export function Player({
   }, [isPlaying, variant, currentVariantUrl, lockedPlayback]);
 
   const trackUrl =
-    isPlaying && lockedPlayback && track?.dayIndex === lockedPlayback.dayIndex
+    isPlaying && lockedPlayback && day?.dayIndex === lockedPlayback.dayIndex
       ? lockedPlayback.url
       : currentVariantUrl;
 
@@ -96,35 +92,12 @@ export function Player({
   );
 
   const displayVariant =
-    isPlaying && lockedPlayback && track?.dayIndex === lockedPlayback.dayIndex
+    isPlaying && lockedPlayback && day?.dayIndex === lockedPlayback.dayIndex
       ? lockedPlayback.variant
       : variant;
 
-  const coverImage = track
-    ? displayVariant === 'light'
-      ? track.lightCoverImage
-      : track.heavyCoverImage
-    : undefined;
-  const creditedTo = track
-    ? displayVariant === 'light'
-      ? track.lightCreditedTo
-      : track.heavyCreditedTo
-    : undefined;
-  const buyLink = track
-    ? displayVariant === 'light'
-      ? track.lightBuyLink
-      : track.heavyBuyLink
-    : undefined;
-  const artistName = track
-    ? displayVariant === 'light'
-      ? track.lightArtistName
-      : track.heavyArtistName
-    : undefined;
-  const trackName = track
-    ? displayVariant === 'light'
-      ? track.lightTrackName
-      : track.heavyTrackName
-    : undefined;
+  const nowPlaying = day?.tracks[displayVariant];
+  const { coverImage, buyLink, artistName, trackName } = nowPlaying ?? {};
 
   const handleEnded = useCallback(() => {
     onNext();
@@ -195,14 +168,14 @@ export function Player({
         />
       </div>
       <div className="mx-auto flex justify-between flex-wrap max-w-4xl items-center gap-4 px-6 py-3">
-        {track ? (
+        {day ? (
           <>
             <div className="flex items-center gap-3 -0">
               <div className="relative h-15 w-15 overflow-hidden rounded">
                 {coverImage && (
                   <img
                     src={coverImage}
-                    alt={`Day ${track.dayIndex + 1}`}
+                    alt={`Day ${day.dayIndex + 1}`}
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                 )}
@@ -212,7 +185,7 @@ export function Player({
                   {trackName || 'Track Title'}
                 </p>
                 <p className="truncate text-xs text-zinc-500">
-                  {artistName || creditedTo}
+                  {artistName || day.creditedTo}
                 </p>
                 {buyLink && (
                   <a
@@ -309,20 +282,20 @@ export function Player({
           <div className="flex-1" />
         )}
 
-        {track && (
+        {day && (
           <div>
             <span className="text-zinc-500 text-sm">Curated by:</span> <br />{' '}
-            {track?.participantLink ? (
+            {day.participantLink ? (
               <a
-                href={track.participantLink}
+                href={day.participantLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-teal-600 hover:text-teal-700 hover:underline"
               >
-                {track?.creditedTo}
+                {day.creditedTo}
               </a>
             ) : (
-              track?.creditedTo
+              day.creditedTo
             )}
           </div>
         )}

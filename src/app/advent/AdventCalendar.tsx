@@ -7,15 +7,15 @@ import { CalendarGrid } from './CalendarGrid';
 import { DetailsCard } from './DetailsCard';
 import { Player } from './Player';
 import { AboutSidebar } from './AboutSidebar';
-import { Track, Participant } from './types';
+import { Day, Participant } from './types';
 import { useAdventDay } from './AdventDayContext';
 
 interface AdventCalendarProps {
-  tracks: Track[];
+  days: Day[];
   participants: Participant[];
 }
 
-export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
+export function AdventCalendar({ days, participants }: AdventCalendarProps) {
   const {
     revealedIndices,
     addRevealedIndex,
@@ -25,12 +25,10 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
   } = useAdventDay();
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [hoveredTrack, setHoveredTrack] = useState<Track | null>(null);
+  const [hoveredDay, setHoveredDay] = useState<Day | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isAboutOpen, setIsAboutOpen] = useState(false);
-  const [mobileSelectedTrack, setMobileSelectedTrack] = useState<Track | null>(
-    null
-  );
+  const [mobileSelectedDay, setMobileSelectedDay] = useState<Day | null>(null);
 
   const revealedSet = useMemo(
     () => new Set(revealedIndices),
@@ -125,8 +123,8 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
   }, [playingIndex, sortedRevealedIndices]);
 
   const handleHover = useCallback(
-    (track: Track | null, event: React.MouseEvent | null) => {
-      setHoveredTrack(track);
+    (day: Day | null, event: React.MouseEvent | null) => {
+      setHoveredDay(day);
       if (event) {
         setMousePosition({ x: event.clientX, y: event.clientY });
       }
@@ -134,29 +132,29 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
     []
   );
 
-  const handleMobileSelect = useCallback((track: Track) => {
-    setMobileSelectedTrack(track);
+  const handleMobileSelect = useCallback((day: Day) => {
+    setMobileSelectedDay(day);
   }, []);
 
   const handleCloseMobileDetails = useCallback(() => {
-    setMobileSelectedTrack(null);
+    setMobileSelectedDay(null);
   }, []);
 
   const handleMobilePlay = useCallback(() => {
-    if (mobileSelectedTrack) {
-      handlePlay(mobileSelectedTrack.dayIndex);
+    if (mobileSelectedDay) {
+      handlePlay(mobileSelectedDay.dayIndex);
     }
-  }, [mobileSelectedTrack, handlePlay]);
+  }, [mobileSelectedDay, handlePlay]);
 
   const handleDetailsPlay = useCallback(() => {
-    if (hoveredTrack) {
-      handlePlay(hoveredTrack.dayIndex);
+    if (hoveredDay) {
+      handlePlay(hoveredDay.dayIndex);
     }
-  }, [hoveredTrack, handlePlay]);
+  }, [hoveredDay, handlePlay]);
 
-  const currentTrack =
+  const currentDay =
     playingIndex !== null
-      ? tracks.find((t) => t.dayIndex === playingIndex) || null
+      ? days.find((d) => d.dayIndex === playingIndex) || null
       : null;
 
   return (
@@ -178,7 +176,7 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
       </AnimatePresence>
       <Header onAboutClick={() => setIsAboutOpen(true)} />
       <CalendarGrid
-        tracks={tracks}
+        days={days}
         revealedIndices={revealedSet}
         playingIndex={playingIndex}
         onReveal={handleReveal}
@@ -187,19 +185,19 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
         onMobileSelect={handleMobileSelect}
       />
       <DetailsCard
-        track={hoveredTrack}
+        day={hoveredDay}
         position={mousePosition}
-        isPlaying={isPlaying && hoveredTrack?.dayIndex === playingIndex}
+        isPlaying={isPlaying && hoveredDay?.dayIndex === playingIndex}
         onPlay={handleDetailsPlay}
-        mobileTrack={mobileSelectedTrack}
+        mobileDay={mobileSelectedDay}
         onCloseMobile={handleCloseMobileDetails}
         onMobilePlay={handleMobilePlay}
         isMobilePlaying={
-          isPlaying && mobileSelectedTrack?.dayIndex === playingIndex
+          isPlaying && mobileSelectedDay?.dayIndex === playingIndex
         }
       />
       <Player
-        track={currentTrack}
+        day={currentDay}
         isPlaying={isPlaying}
         onPlayPause={handlePlayPause}
         onNext={handleNext}
