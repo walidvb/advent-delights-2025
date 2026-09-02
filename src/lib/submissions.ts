@@ -1,5 +1,5 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { claimableDays, DAYS_IN_CALENDAR } from '@/app/advent/reveal';
+import { claimableDays, DAYS_IN_CALENDAR, isArchived } from '@/app/advent/reveal';
 import { purgeCalendarPayload } from './calendar-payload';
 
 /**
@@ -308,6 +308,8 @@ export type OwnSubmission = {
   calendarSlug: string;
   variants: Variant[];
   draft: SubmissionDraft;
+  /** An Archive is a permanent record: readable here, not editable. */
+  archived: boolean;
 };
 
 /**
@@ -321,7 +323,7 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
   const submission = await database
     .prepare(
       `select s.id, s.calendar_id, s.day, s.credited_to, s.link, s.email,
-              c.name as calendar_name, c.slug as calendar_slug
+              c.name as calendar_name, c.slug as calendar_slug, c.year as calendar_year
          from submissions s join calendars c on c.id = s.calendar_id
         where s.edit_token = ?1`,
     )
@@ -335,6 +337,7 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
       email: string;
       calendar_name: string;
       calendar_slug: string;
+      calendar_year: number;
     }>();
   if (!submission) return null;
 
@@ -362,6 +365,7 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
     calendarName: submission.calendar_name,
     calendarSlug: submission.calendar_slug,
     variants,
+    archived: isArchived(submission.calendar_year, new Date()),
     draft: {
       creditedTo: submission.credited_to,
       link: submission.link,
@@ -392,21 +396,27 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
  * Saves changes to the Submission the token names. The Day and the Calendar are
  * not editable: changing the Day would be a second claim, which is a new
  * Submission and not an edit.
+ *
+ * `'archived'` means the Calendar's December is over. An Archive is a permanent
+ * record, so a still-valid edit token stops being a licence to rewrite it — and
+ * the refusal lives here, in front of the only write, rather than in the page
+ * that hides the form. Posting the action directly hits this.
  */
 export async function updateSubmission(
   editToken: string,
   draft: SubmissionDraft,
-): Promise<{ calendarSlug: string } | null> {
+): Promise<{ calendarSlug: string } | 'archived' | null> {
   const database = await db();
   const submission = await database
     .prepare(
-      `select s.id, c.slug as calendar_slug from submissions s
+      `select s.id, c.slug as calendar_slug, c.year as calendar_year from submissions s
          join calendars c on c.id = s.calendar_id
         where s.edit_token = ?1`,
     )
     .bind(editToken)
-    .first<{ id: string; calendar_slug: string }>();
+    .first<{ id: string; calendar_slug: string; calendar_year: number }>();
   if (!submission) return null;
+  if (isArchived(submission.calendar_year, new Date())) return 'archived';
 
   const variants = Object.keys(draft.tracks);
   await database.batch([

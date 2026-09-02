@@ -39,3 +39,17 @@ export function claimableDays(year: number, now: Date): number[] {
     (_, i) => revealed + 1 + i
   );
 }
+
+/**
+ * Whether a Calendar has become an Archive: the 25th is over, so every Day is
+ * open, nothing more can be added, and nothing already there can be changed.
+ *
+ * Deliberately a day later than the point where `claimableDays` runs out. That
+ * one is about claiming, and a Day cannot be claimed once it has opened; this
+ * one is about the Calendar being finished. On the 25th itself the last Day is
+ * still opening, and a Contributor should still be able to fix a broken link in
+ * it.
+ */
+export function isArchived(year: number, now: Date): boolean {
+  return now >= new Date(year, DECEMBER, 26);
+}

@@ -153,7 +153,11 @@ export async function saveSubmissionAction(
   const problem = draftProblem(draft, existing.variants);
   if (problem) return { attempt, error: problem, draft };
 
-  await updateSubmission(editToken, draft);
+  const result = await updateSubmission(editToken, draft);
+  if (result === 'archived') {
+    const error = `${existing.calendarName} has finished — an Archive can no longer be changed.`;
+    return { attempt, error, draft };
+  }
   return { attempt, saved: true, draft };
 }
 
