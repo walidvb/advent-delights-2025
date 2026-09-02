@@ -17,8 +17,8 @@ interface AdventCalendarProps {
 
 export function AdventCalendar({ days, participants }: AdventCalendarProps) {
   const {
-    revealedIndices,
-    addRevealedIndex,
+    openedIndices,
+    addOpenedIndex,
     variant,
     shuffleEnabled,
     setShuffleEnabled,
@@ -30,21 +30,18 @@ export function AdventCalendar({ days, participants }: AdventCalendarProps) {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [mobileSelectedDay, setMobileSelectedDay] = useState<Day | null>(null);
 
-  const revealedSet = useMemo(
-    () => new Set(revealedIndices),
-    [revealedIndices]
-  );
+  const openedSet = useMemo(() => new Set(openedIndices), [openedIndices]);
 
-  // Sort revealed indices to navigate through them in order
-  const sortedRevealedIndices = useMemo(() => {
-    return [...revealedIndices].sort((a, b) => a - b);
-  }, [revealedIndices]);
+  // Sort opened indices to navigate through them in order
+  const sortedOpenedIndices = useMemo(() => {
+    return [...openedIndices].sort((a, b) => a - b);
+  }, [openedIndices]);
 
   const handleReveal = useCallback(
     (index: number) => {
-      addRevealedIndex(index);
+      addOpenedIndex(index);
     },
-    [addRevealedIndex]
+    [addOpenedIndex]
   );
 
   const handlePlay = useCallback(
@@ -65,10 +62,10 @@ export function AdventCalendar({ days, participants }: AdventCalendarProps) {
   }, [isPlaying]);
 
   const handleNext = useCallback(() => {
-    if (playingIndex === null || sortedRevealedIndices.length === 0) return;
+    if (playingIndex === null || sortedOpenedIndices.length === 0) return;
 
     if (shuffleEnabled) {
-      const availableIndices = sortedRevealedIndices.filter(
+      const availableIndices = sortedOpenedIndices.filter(
         (i) => i !== playingIndex
       );
       if (availableIndices.length > 0) {
@@ -76,17 +73,17 @@ export function AdventCalendar({ days, participants }: AdventCalendarProps) {
           availableIndices[Math.floor(Math.random() * availableIndices.length)];
         setPlayingIndex(randomIndex);
       } else {
-        setPlayingIndex(sortedRevealedIndices[0]);
+        setPlayingIndex(sortedOpenedIndices[0]);
       }
     } else {
-      const currentPos = sortedRevealedIndices.indexOf(playingIndex);
+      const currentPos = sortedOpenedIndices.indexOf(playingIndex);
       if (currentPos === -1) {
-        setPlayingIndex(sortedRevealedIndices[0]);
+        setPlayingIndex(sortedOpenedIndices[0]);
       } else {
-        const isLastTrack = currentPos === sortedRevealedIndices.length - 1;
+        const isLastTrack = currentPos === sortedOpenedIndices.length - 1;
         if (isLastTrack) {
           setShuffleEnabled(true);
-          const availableIndices = sortedRevealedIndices.filter(
+          const availableIndices = sortedOpenedIndices.filter(
             (i) => i !== playingIndex
           );
           if (availableIndices.length > 0) {
@@ -96,31 +93,31 @@ export function AdventCalendar({ days, participants }: AdventCalendarProps) {
               ];
             setPlayingIndex(randomIndex);
           } else {
-            setPlayingIndex(sortedRevealedIndices[0]);
+            setPlayingIndex(sortedOpenedIndices[0]);
           }
         } else {
           const nextPos = currentPos + 1;
-          setPlayingIndex(sortedRevealedIndices[nextPos]);
+          setPlayingIndex(sortedOpenedIndices[nextPos]);
         }
       }
     }
     setIsPlaying(true);
-  }, [playingIndex, sortedRevealedIndices, shuffleEnabled, setShuffleEnabled]);
+  }, [playingIndex, sortedOpenedIndices, shuffleEnabled, setShuffleEnabled]);
 
   const handlePrevious = useCallback(() => {
-    if (playingIndex === null || sortedRevealedIndices.length === 0) return;
+    if (playingIndex === null || sortedOpenedIndices.length === 0) return;
 
-    const currentPos = sortedRevealedIndices.indexOf(playingIndex);
+    const currentPos = sortedOpenedIndices.indexOf(playingIndex);
     if (currentPos === -1) {
-      setPlayingIndex(sortedRevealedIndices[sortedRevealedIndices.length - 1]);
+      setPlayingIndex(sortedOpenedIndices[sortedOpenedIndices.length - 1]);
     } else {
       const prevPos =
-        (currentPos - 1 + sortedRevealedIndices.length) %
-        sortedRevealedIndices.length;
-      setPlayingIndex(sortedRevealedIndices[prevPos]);
+        (currentPos - 1 + sortedOpenedIndices.length) %
+        sortedOpenedIndices.length;
+      setPlayingIndex(sortedOpenedIndices[prevPos]);
     }
     setIsPlaying(true);
-  }, [playingIndex, sortedRevealedIndices]);
+  }, [playingIndex, sortedOpenedIndices]);
 
   const handleHover = useCallback(
     (day: Day | null, event: React.MouseEvent | null) => {
@@ -177,7 +174,7 @@ export function AdventCalendar({ days, participants }: AdventCalendarProps) {
       <Header onAboutClick={() => setIsAboutOpen(true)} />
       <CalendarGrid
         days={days}
-        revealedIndices={revealedSet}
+        revealedIndices={openedSet}
         playingIndex={playingIndex}
         onReveal={handleReveal}
         onPlay={handlePlay}

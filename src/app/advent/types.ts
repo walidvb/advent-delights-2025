@@ -1,6 +1,16 @@
 export type TrackVariant = 'light' | 'heavy';
 
 /**
+ * Which Calendar the viewer is looking at: its Slug, and the year it belongs
+ * to. The Slug keys the browser's record of which Days have been opened; the
+ * year decides which Days have revealed.
+ */
+export interface CalendarIdentity {
+  slug: string;
+  year: number;
+}
+
+/**
  * One piece of music: where to hear it, who made it, what it's called, why the
  * Contributor chose it, and where to buy it. Always a link to somewhere else —
  * nothing is hosted here.

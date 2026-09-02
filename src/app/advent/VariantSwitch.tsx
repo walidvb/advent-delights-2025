@@ -161,13 +161,13 @@ const Peace = (props: any) => (
 );
 
 export function VariantSwitch() {
-  const { variant, setVariant, currentDayIndex, revealedIndices } =
+  const { variant, setVariant, currentDayIndex, openedIndices } =
     useAdventDay();
 
   const hasUnrevealedTracks =
     currentDayIndex >= 0 &&
     Array.from({ length: currentDayIndex + 1 }, (_, i) => i).some(
-      (i) => !revealedIndices.includes(i)
+      (i) => !openedIndices.includes(i)
     );
 
   return (
