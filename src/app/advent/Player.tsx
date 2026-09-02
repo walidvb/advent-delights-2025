@@ -4,7 +4,14 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Track, TrackVariant } from './types';
-import ReactPlayer from 'react-player';
+import dynamic from 'next/dynamic';
+import type ReactPlayerType from 'react-player';
+import type { OnProgressProps } from 'react-player/base';
+
+// react-player v2 renders nothing on the server and mounts its player on the
+// client, so server-rendering it fails hydration. It is loaded client-side
+// only. (v3 rendered a plain <video> and did not need this.)
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 import { useAdventDay } from './AdventDayContext';
 import { cn } from '@/lib/utils';
 
@@ -30,8 +37,7 @@ export function Player({
   onPrevious,
 }: PlayerProps) {
   const { variant, shuffleEnabled, setShuffleEnabled } = useAdventDay();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<ReactPlayerType>(null);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [seeking, setSeeking] = useState(false);
@@ -80,6 +86,15 @@ export function Player({
       ? lockedPlayback.url
       : currentVariantUrl;
 
+  // react-player v2 reads `list=`/`channel=` in a YouTube URL as a request to
+  // load that playlist instead of the linked video. Plenty of submitted Track
+  // URLs carry one (`&list=RD…`, `&list=LL`), so drop it: a Track is one piece
+  // of music, never a playlist.
+  const playableUrl = trackUrl?.replace(
+    /([?&])(?:list|channel)=[^&]*/g,
+    '$1'
+  );
+
   const displayVariant =
     isPlaying && lockedPlayback && track?.dayIndex === lockedPlayback.dayIndex
       ? lockedPlayback.variant
@@ -123,15 +138,18 @@ export function Player({
     setIsBuffering(false);
   }, []);
 
-  const handleProgress = useCallback(() => {
-    if (!seeking) {
-      setDuration(playerRef.current?.duration);
-    }
-  }, [seeking]);
-
-  const handleTimeUpdate = () => {
-    setProgress(playerRef.current?.currentTime / playerRef.current?.duration);
-  };
+  // Duration is read off the player on every progress tick rather than taken
+  // from `onDuration`: v2 fires that at most once per url, and on SoundCloud
+  // the widget's PLAY event beats its own duration lookup, so the callback
+  // reports the *previous* Track's length and never corrects itself.
+  const handleProgress = useCallback(
+    (state: OnProgressProps) => {
+      if (seeking) return;
+      setProgress(state.played);
+      setDuration(playerRef.current?.getDuration() ?? 0);
+    },
+    [seeking]
+  );
 
   const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setProgress(parseFloat(e.target.value) / 100);
@@ -143,10 +161,10 @@ export function Player({
 
   const handleSeekMouseUp = (e: React.MouseEvent<HTMLInputElement>) => {
     setSeeking(false);
-    if (!playerRef.current) return;
-    playerRef.current.currentTime =
-      (parseFloat((e.target as HTMLInputElement).value) / 100) *
-      playerRef.current.duration;
+    playerRef.current?.seekTo(
+      parseFloat((e.target as HTMLInputElement).value) / 100,
+      'fraction'
+    );
   };
 
   const formatTime = (seconds: number) => {
@@ -166,13 +184,12 @@ export function Player({
         {' '}
         <ReactPlayer
           ref={playerRef}
-          src={trackUrl}
+          url={playableUrl}
           playing={isPlaying}
           onProgress={handleProgress}
-          onTimeUpdate={handleTimeUpdate}
           onEnded={handleEnded}
-          onWaiting={handleBuffer}
-          onPlaying={handleBufferEnd}
+          onBuffer={handleBuffer}
+          onBufferEnd={handleBufferEnd}
           width="1000"
           height="1000"
         />
@@ -276,7 +293,7 @@ export function Player({
                   type="range"
                   min={0}
                   max={100}
-                  value={seeking ? undefined : progress * 100}
+                  value={progress * 100}
                   onChange={handleSeekChange}
                   onMouseDown={handleSeekMouseDown}
                   onMouseUp={handleSeekMouseUp}
