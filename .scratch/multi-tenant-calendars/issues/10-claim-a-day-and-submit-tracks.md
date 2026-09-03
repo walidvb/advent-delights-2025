@@ -145,3 +145,7 @@ every Day of the seeded 2025 Calendar has revealed.
 - `ponytail:` a Contributor who loses their edit link and gave no email address
   has no way back to their Submission. That is the deal the spec makes —
   no accounts, no identity — and the receipt email in ticket 14 is the mitigation.
+
+---
+
+**Superseded in part, post-launch:** the design was reworked (see spec.md's "Random assignment" and updated "Curator visibility" sections) — a Contributor is now dealt a random claimable Day rather than picking one, names on the Curator's grid are hidden behind a "Show names" switch, revealing a Day is now one click with no separate confirmation step, and a revealed Day stays visibly marked afterward. Deletion still sends no mail. The acceptance boxes above describe the original shipped behaviour; the current behaviour is spec.md's.

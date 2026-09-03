@@ -14,26 +14,17 @@ import {
   getSubmitView,
   readDraft,
   updateSubmission,
-  type DayState,
   type SubmissionDraft,
 } from '@/lib/submissions';
 
 /**
- * What the claim form knows after a try. Everything a Contributor typed comes
- * back in `draft`, so losing the race to a Day — or mistyping a link — never
- * costs them their work; `attempt` remounts the form so the fields re-read
- * those values as their defaults.
- *
- * `days` is the freshly re-read claim state, so a Contributor who lost is
- * choosing from what is actually free now rather than from the grid they
- * loaded.
+ * What the claim form knows after a try. Nothing a Contributor typed is
+ * carried here — the wizard holding it never unmounts on a failed attempt, so
+ * their fields keep exactly what they typed without a round trip.
  */
 export type SubmitState = {
   attempt: number;
   error?: string;
-  day?: number;
-  draft?: SubmissionDraft;
-  days?: DayState[];
   claimed?: { editPath: string; calendarPath: string };
 };
 
@@ -46,36 +37,19 @@ export async function submitAction(
   if (!view) return { attempt: previous.attempt + 1, error: 'This submission link is not valid.' };
 
   const draft = readDraft(formData, view.variants);
-  // The hidden input is empty until a Day is picked, and `Number('')` is 0 —
-  // so this must ask for a real Day, not merely an integer.
-  const day = Number(formData.get('day'));
-  const failed = (error: string, days?: DayState[]): SubmitState => ({
-    attempt: previous.attempt + 1,
-    error,
-    day,
-    draft,
-    days: days ?? view.days,
-  });
-
-  if (!Number.isInteger(day) || day < 1) return failed('Pick a Day first.');
-
   const problem = draftProblem(draft, view.variants);
-  if (problem) return failed(problem);
+  if (problem) return { attempt: previous.attempt + 1, error: problem };
 
-  const result = await createSubmission(submitSlug, day, draft);
+  const result = await createSubmission(submitSlug, draft);
   if (result === 'not-found') {
     return { attempt: previous.attempt + 1, error: 'This submission link is not valid.' };
   }
-  if (result === 'not-claimable') {
-    return failed(`Day ${day} has already opened, so it can't be claimed. Pick another.`);
-  }
-  if (result === 'taken') {
-    // Somebody else's Submission landed first and nothing of theirs was
-    // written. The grid is re-read so the Day they lost now shows as claimed.
-    return failed(
-      `Someone claimed Day ${day} just before you did. Pick another — everything you typed is still here.`,
-      (await getSubmitView(submitSlug))?.days,
-    );
+  if (result === 'full' || result === 'taken') {
+    return {
+      attempt: previous.attempt + 1,
+      error:
+        'Every Day here is spoken for now. Nothing you typed is lost — try again shortly, or ask the Curator if someone drops out.',
+    };
   }
 
   const claimed = {

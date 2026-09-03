@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCurator, pendingCodeEmail } from '@/lib/auth';
 import { requestCodeAction, useAnotherEmailAction, verifyCodeAction } from './actions';
+import { CodeInput } from './CodeInput';
 
 const MESSAGES: Record<string, string> = {
   email: "That doesn't look like an email address. Check it and try again.",
@@ -10,9 +11,9 @@ const MESSAGES: Record<string, string> = {
 };
 
 const field =
-  'w-full rounded-md border border-input bg-background px-3 py-2 text-base outline-none focus:ring-2 focus:ring-ring';
+  'w-full rounded-lg border border-zinc-300 px-3.5 py-3 text-base outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10';
 const button =
-  'w-full rounded-md bg-primary px-3 py-2 font-medium text-primary-foreground hover:opacity-90';
+  'w-full rounded-full bg-zinc-900 px-4 py-3.5 font-medium text-zinc-50 hover:opacity-90';
 
 export default async function SignInPage({
   searchParams,
@@ -25,68 +26,69 @@ export default async function SignInPage({
   const message = error ? MESSAGES[error] : undefined;
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 p-6">
-      <div>
-        <h1 className="font-title text-4xl">Curator sign-in</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          No password. We email you a six-digit code.
-        </p>
+    <main className="relative flex min-h-dvh items-center justify-center bg-[url('/light.webp')] bg-cover bg-fixed bg-center px-4 py-10">
+      <span className="absolute left-6 top-6 font-title text-3xl italic font-light">
+        Advent Delights
+      </span>
+
+      <div className="w-full max-w-sm rounded-2xl border border-zinc-200/70 bg-white p-8 shadow-[0_1px_2px_rgba(0,0,0,.04),0_12px_40px_rgba(0,0,0,.10)]">
+        <div className="flex flex-col gap-6">
+          {message && (
+            <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {message}
+            </p>
+          )}
+
+          {awaitingCodeFor ? (
+            <>
+              <div className="flex flex-col gap-1">
+                <h1 className="text-2xl font-normal">Check your email</h1>
+                <p className="text-sm text-zinc-500">
+                  Six digits, sent to <strong className="text-zinc-900">{awaitingCodeFor}</strong>.
+                </p>
+              </div>
+              <form action={verifyCodeAction} className="flex flex-col gap-4">
+                <CodeInput invalid={error === 'invalid'} />
+                <button type="submit" className={button}>
+                  Sign in
+                </button>
+              </form>
+              <form action={useAnotherEmailAction}>
+                <button type="submit" className="text-sm text-zinc-500 underline">
+                  Use a different email address
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-col gap-1">
+                <h1 className="text-2xl font-normal">Sign in</h1>
+                <p className="text-sm text-zinc-500">No password, ever. We&apos;ll email you a six-digit code.</p>
+              </div>
+              <form action={requestCodeAction} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="email" className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    autoFocus
+                    placeholder="you@example.com"
+                    className={field}
+                  />
+                </div>
+                <button type="submit" className={button}>
+                  Send me a code
+                </button>
+              </form>
+            </>
+          )}
+        </div>
       </div>
-
-      {message && (
-        <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {message}
-        </p>
-      )}
-
-      {awaitingCodeFor ? (
-        <>
-          <form action={verifyCodeAction} className="flex flex-col gap-3">
-            <label htmlFor="code" className="text-sm">
-              We sent a code to <strong>{awaitingCodeFor}</strong>. It expires in ten minutes.
-            </label>
-            <input
-              id="code"
-              name="code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              pattern="[0-9]{6}"
-              maxLength={6}
-              required
-              autoFocus
-              placeholder="000000"
-              className={`${field} text-center tracking-[0.5em]`}
-            />
-            <button type="submit" className={button}>
-              Sign in
-            </button>
-          </form>
-          <form action={useAnotherEmailAction}>
-            <button type="submit" className="text-sm underline text-muted-foreground">
-              Use a different email address
-            </button>
-          </form>
-        </>
-      ) : (
-        <form action={requestCodeAction} className="flex flex-col gap-3">
-          <label htmlFor="email" className="text-sm">
-            Your email address
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            autoFocus
-            placeholder="you@example.com"
-            className={field}
-          />
-          <button type="submit" className={button}>
-            Email me a code
-          </button>
-        </form>
-      )}
     </main>
   );
 }

@@ -163,3 +163,7 @@ for Day 14 with the same result.
   merging them would widen `getClaims`' return type for no gain.
 - **Deletion has no second confirmation**, beyond having to navigate to the
   Day's own page to find the button. The page says there is no undo.
+
+---
+
+**Superseded in part, post-launch:** the design was reworked (see spec.md's "Random assignment" and updated "Curator visibility" sections) — a Contributor is now dealt a random claimable Day rather than picking one, names on the Curator's grid are hidden behind a "Show names" switch, revealing a Day is now one click with no separate confirmation step, and a revealed Day stays visibly marked afterward. Deletion still sends no mail. The acceptance boxes above describe the original shipped behaviour; the current behaviour is spec.md's.

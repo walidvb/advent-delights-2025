@@ -6,18 +6,15 @@ import { DAYS_IN_CALENDAR } from '@/app/advent/reveal';
 import { deleteSubmissionAction } from '@/app/dashboard/actions';
 
 /**
- * One Day, from the Curator's side. Two things happen here and nothing else:
- * the Submission can be deleted, and the Day can be spoiled.
+ * One Day, from the Curator's side. Two things happen here: the Submission
+ * can be deleted, and the Day can be spoiled.
  *
- * **Nothing is read from `tracks` unless `?spoil=1` is on the URL**, which is
- * only ever reached by clicking the link under the warning below. Arriving at
- * this page, hovering the link, or deleting from it all leave the surprise
- * intact — and spoiling this Day says nothing about any other, because
- * `revealDay` is asked for one Day.
+ * **Spoiling is one click, immediate, no separate confirmation step** — the
+ * click on "Spoil" is the whole of the decision. `?spoil=1` is only ever
+ * reached by that click (a plain `<a>`, never prefetched), and `revealDay`
+ * marks the Day spoiled the first time, so the Curator's grid keeps showing it
+ * that way afterward.
  */
-
-const button = 'rounded-md bg-primary px-3 py-2 font-medium text-primary-foreground hover:opacity-90';
-
 export default async function CuratorDayPage({
   params,
   searchParams,
@@ -32,85 +29,90 @@ export default async function CuratorDayPage({
   const day = Number(rawDay);
   if (!Number.isInteger(day) || day < 1 || day > DAYS_IN_CALENDAR) notFound();
 
-  // Null for somebody else's Calendar and for a Day nobody has claimed, so
-  // neither is distinguishable from a Day that does not exist.
   const claim = await getClaim(id, curator.id, day);
   if (!claim) notFound();
 
   const revealed = spoil === '1' ? await revealDay(id, curator.id, day) : null;
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 p-6">
-      <Link href={`/dashboard/calendar/${id}`} className="text-sm underline text-muted-foreground">
-        Back to the Calendar
-      </Link>
+    <main className="flex min-h-dvh justify-center bg-[url('/light.webp')] bg-cover bg-fixed bg-center px-4 py-10">
+      <div className="flex w-full max-w-lg flex-col gap-6">
+        <Link href={`/dashboard/calendar/${id}`} className="text-sm text-zinc-600">
+          ← Back to the Calendar
+        </Link>
 
-      <h1 className="font-title text-4xl">Day {day}</h1>
-      <p>
-        Claimed by <strong>{claim.claimedBy}</strong>.
-      </p>
+        <div className="rounded-2xl border border-white/70 bg-white/95 p-6 shadow-[0_10px_30px_rgba(0,0,0,.10)]">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-xs text-zinc-400">Day {day}</span>
+          </div>
+          <p className="mt-2 text-sm">
+            Claimed by <strong>{claim.claimedBy}</strong>.
+          </p>
 
-      <form action={deleteSubmissionAction} className="flex flex-col gap-2 border-t border-border pt-6">
-        <input type="hidden" name="id" value={id} />
-        <input type="hidden" name="day" value={day} />
-        <h2 className="font-title text-2xl">Remove this Submission</h2>
-        <p className="text-sm text-muted-foreground">
-          Deletes what {claim.claimedBy} put behind Day {day} without showing it to you, and frees
-          the Day for someone else — as long as it hasn&apos;t opened yet. There is no undo.
-        </p>
-        <button type="submit" className={`${button} self-start bg-destructive`}>
-          Delete Day {day}
-        </button>
-      </form>
+          <form action={deleteSubmissionAction} className="mt-5 flex items-center gap-3 border-t border-zinc-100 pt-5">
+            <input type="hidden" name="id" value={id} />
+            <input type="hidden" name="day" value={day} />
+            <button
+              type="submit"
+              className="rounded-full border border-red-200 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+            >
+              Delete Day {day}
+            </button>
+            <span className="text-xs text-zinc-400">
+              Frees the Day again — as long as it hasn&apos;t opened yet. No undo.
+            </span>
+          </form>
+        </div>
 
-      <section className="flex flex-col gap-2 border-t border-border pt-6">
-        <h2 className="font-title text-2xl">Look behind Day {day}</h2>
-        {revealed ? (
-          <>
-            <p className="text-sm text-muted-foreground">
-              Day {day}, spoiled at your request. Every other Day is still a surprise.
-            </p>
-            {revealed.link && (
-              <p className="text-sm">
-                {claim.claimedBy}&apos;s link: <span className="font-mono">{revealed.link}</span>
-              </p>
-            )}
-            {revealed.tracks.map((track) => (
-              <article key={track.variant} className="flex flex-col gap-1 rounded-md border border-border p-4">
-                <h3 className="font-title text-xl">{track.label}</h3>
-                <p>
-                  <strong>{track.title}</strong> — {track.artist}
+        <div className="rounded-2xl border border-white/70 bg-white/95 p-6 shadow-[0_10px_30px_rgba(0,0,0,.10)]">
+          {revealed ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] uppercase tracking-wide text-red-700">
+                  Seal broken
+                </span>
+                <span className="font-mono text-xs text-zinc-400">{day}</span>
+              </div>
+              {revealed.tracks.map((track) => (
+                <div key={track.variant} className="flex items-center gap-3">
+                  {track.cover && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={track.cover} alt="" className="size-11 shrink-0 rounded-md object-cover" />
+                  )}
+                  <div className="flex min-w-0 flex-col">
+                    <span className="truncate text-sm font-medium">{track.title}</span>
+                    <span className="text-xs text-zinc-500">
+                      {track.artist} · {track.label.toLowerCase()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {revealed.link && (
+                <p className="text-xs text-zinc-500">
+                  {claim.claimedBy}&apos;s link: <span className="font-mono">{revealed.link}</span>
                 </p>
-                <p className="text-sm">{track.description}</p>
-                <p className="break-all font-mono text-xs text-muted-foreground">{track.url}</p>
-                {track.buyLink && (
-                  <p className="break-all font-mono text-xs text-muted-foreground">
-                    Buy: {track.buyLink}
-                  </p>
-                )}
-                {track.cover && (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={track.cover} alt="" className="size-32 rounded-md object-cover" />
-                )}
-              </article>
-            ))}
-          </>
-        ) : (
-          <>
-            <p className="text-sm">
-              This will show you the tracks {claim.claimedBy} chose for Day {day}, and you
-              won&apos;t be able to unsee them. Only do this if you have a reason to — a broken
-              link, or something that shouldn&apos;t be there. Nothing on this page has been read
-              from the Calendar yet.
-            </p>
-            {/* A plain anchor, not a Link: nothing is to be prefetched into the
-                browser before the Curator has decided to spoil themselves. */}
-            <a href={`/dashboard/calendar/${id}/day/${day}?spoil=1`} className={`${button} self-start`}>
-              Spoil Day {day} for me
-            </a>
-          </>
-        )}
-      </section>
+              )}
+              <p className="border-t border-zinc-100 pt-3 text-xs text-zinc-500">
+                Only you can see this. Day {day} still reveals normally for everyone else.
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm text-zinc-600">
+                Nothing here has been read yet — spoiling is instant, one click.
+              </span>
+              {/* A plain anchor, not a Link: nothing is prefetched into the
+                  browser before the Curator has actually clicked to spoil. */}
+              <a
+                href={`/dashboard/calendar/${id}/day/${day}?spoil=1`}
+                className="shrink-0 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-50"
+              >
+                Spoil
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

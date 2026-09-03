@@ -3,12 +3,12 @@ import { getSubmitView } from '@/lib/submissions';
 import { SubmitForm } from './SubmitForm';
 
 /**
- * The Submit slug: where a Contributor claims a Day.
+ * The Submit slug: where a Contributor is dealt a Day.
  *
- * Everything on this page comes from `getSubmitView`, which reads Days and
- * credited names and nothing else — so there is no Track content in this
- * page's response to leak. The Submit slug is a secret, so an unknown one is a
- * plain 404 that says nothing about whether it nearly matched.
+ * Everything on this page comes from `getSubmitView`, which reports only how
+ * full the Calendar is — no Day, no credited name, no Track content — so
+ * there is nothing in this page's response for a Contributor to see ahead of
+ * their own reveal.
  */
 export default async function SubmitPage({
   params,
@@ -19,20 +19,22 @@ export default async function SubmitPage({
   if (!view) notFound();
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 p-6">
-      <div>
-        <h1 className="font-title text-4xl">{view.calendarName}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Take a Day, give it two tracks. No account, nothing to sign up for.
+    <main className="flex min-h-dvh justify-center bg-[url('/light.webp')] bg-cover bg-fixed bg-center px-4 py-10 sm:py-16">
+      <div className="flex w-full max-w-xl flex-col items-center gap-8">
+        <div className="flex flex-col items-center gap-1 text-center">
+          <h1 className="font-title text-4xl italic font-light sm:text-5xl">{view.calendarName}</h1>
+          <p className="text-sm text-zinc-700">
+            Take a day, give it two tracks. No account, nothing to sign up for.
+          </p>
+        </div>
+        <p className="max-w-sm text-center text-sm text-zinc-700">
+          You won&apos;t see what anyone else has put in — only roughly how full the Calendar is.
+          December should still be a surprise for you too.
         </p>
+        <div className="w-full">
+          <SubmitForm view={view} />
+        </div>
       </div>
-
-      <p className="text-sm">
-        You won&apos;t see what anyone else has put in — only which Days are taken and who took
-        them. December should still be a surprise for you too.
-      </p>
-
-      <SubmitForm view={view} />
     </main>
   );
 }

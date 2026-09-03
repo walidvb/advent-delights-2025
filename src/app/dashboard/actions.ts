@@ -15,7 +15,7 @@ export async function createCalendarAction(formData: FormData) {
     String(formData.get('description') ?? ''),
   );
 
-  redirect(result === 'name' ? '/dashboard?error=name' : dashboardWithSlugNotice(result));
+  redirect(result === 'name' ? '/dashboard/new?error=name' : dashboardWithSlugNotice(result));
 }
 
 /**

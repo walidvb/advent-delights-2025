@@ -1,5 +1,5 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { claimableDays, DAYS_IN_CALENDAR, isArchived } from '@/app/advent/reveal';
+import { claimableDays, DAYS_IN_CALENDAR, isArchived, revealedDayCount } from '@/app/advent/reveal';
 import { purgeCalendarPayload } from './calendar-payload';
 
 /**
@@ -17,6 +17,12 @@ import { purgeCalendarPayload } from './calendar-payload';
  * `submissions (calendar_id, day)` decides who got the Day; this module inserts
  * and handles the constraint violation rather than looking first and inserting
  * after, because anything else has a gap between the two.
+ *
+ * **The Day is dealt, not chosen.** A Contributor never sees which Days are
+ * free, only how full the Calendar is. `createSubmission` picks a random
+ * still-claimable Day itself, at the moment of insert — reserving one earlier,
+ * when the claim form is first opened, would let an abandoned form squat a Day
+ * forever with nothing behind it.
  */
 
 /** Readable words, not single letters — a Contributor is emailed this. */
@@ -29,16 +35,23 @@ const PROSE = 2000;
 
 export type Variant = { variant: string; label: string };
 
-/** One Day of the grid: claimed by whom, if anyone, and whether it is still up for grabs. */
-export type DayState = { day: number; claimedBy: string | null; claimable: boolean };
-
-/** Everything the Submit slug's page renders. Carries no Track content at all. */
+/**
+ * Everything the Submit slug's page renders. Carries no Track content, and no
+ * Day identity either — a Contributor is dealt a Day, never shown one to pick,
+ * so all this reports is how full the deck is.
+ */
 export type SubmitView = {
   calendarName: string;
   calendarSlug: string;
   submitSlug: string;
-  days: DayState[];
   variants: Variant[];
+  totalDays: number;
+  /** Submissions that exist, whether or not their Day has since revealed. */
+  claimedCount: number;
+  /** Days nobody has claimed and that have not yet revealed — what a deal can still land on. */
+  claimableCount: number;
+  /** Days that have opened for good and can never be dealt again. */
+  revealedCount: number;
 };
 
 /** One Contributor's typed answers, normalised but not yet claimed. */
@@ -171,50 +184,37 @@ async function readVariants(calendarId: string): Promise<Variant[]> {
 }
 
 /**
- * What the Submit slug shows: which Days are free, which are claimed and by
- * whom, and which have already opened and so can never be claimed.
+ * What the Submit slug shows: how full the Calendar is. Never which Days —
+ * a Contributor is dealt one, not shown the deck.
  *
  * Null for a Submit slug no Calendar has. The Submit slug is a secret, so an
  * unknown one is a 404 and says nothing more.
  */
 export async function getSubmitView(submitSlug: string): Promise<SubmitView | null> {
-  // Day and credited name only. Adding a Track column here is the whole of the
-  // spoiler leak this ticket exists to avoid.
-  const { results } = await (await db())
-    .prepare(
-      `select c.id, c.name, c.slug, c.year, s.day, s.credited_to
-         from calendars c
-         left join submissions s on s.calendar_id = c.id
-        where c.submit_slug = ?1`,
-    )
+  const calendar = await (await db())
+    .prepare('select id, name, slug, year from calendars where submit_slug = ?1')
     .bind(submitSlug)
-    .all<{
-      id: string;
-      name: string;
-      slug: string;
-      year: number;
-      day: number | null;
-      credited_to: string | null;
-    }>();
+    .first<{ id: string; name: string; slug: string; year: number }>();
+  if (!calendar) return null;
 
-  if (results.length === 0) return null;
-
-  const calendar = results[0];
-  const claimable = new Set(claimableDays(calendar.year, new Date()));
-  const claimedBy = new Map(
-    results.filter((row) => row.day !== null).map((row) => [row.day, row.credited_to ?? '']),
-  );
+  // Day only — never credited_to, and nothing from `tracks`. This page has no
+  // use for who claimed what, only how many.
+  const { results: claimed } = await (await db())
+    .prepare('select day from submissions where calendar_id = ?1')
+    .bind(calendar.id)
+    .all<{ day: number }>();
+  const claimedDays = new Set(claimed.map((row) => row.day));
+  const claimable = claimableDays(calendar.year, new Date());
 
   return {
     calendarName: calendar.name,
     calendarSlug: calendar.slug,
     submitSlug,
     variants: await readVariants(calendar.id),
-    days: Array.from({ length: DAYS_IN_CALENDAR }, (_, i) => ({
-      day: i + 1,
-      claimedBy: claimedBy.get(i + 1) ?? null,
-      claimable: claimable.has(i + 1),
-    })),
+    totalDays: DAYS_IN_CALENDAR,
+    claimedCount: claimedDays.size,
+    claimableCount: claimable.filter((day) => !claimedDays.has(day)).length,
+    revealedCount: revealedDayCount(calendar.year, new Date()),
   };
 }
 
@@ -264,17 +264,45 @@ function trackUpsert(
 export type ClaimResult =
   | { editToken: string; calendarSlug: string }
   | 'not-found'
-  | 'not-claimable'
+  | 'full'
   | 'taken';
 
+/** How many random deals to try before admitting the deck is effectively full. */
+const DEAL_ATTEMPTS = 8;
+
 /**
- * Claims a Day and stores the Tracks, in one transaction, first come first
- * served. `'taken'` means somebody else's Submission landed first and nothing
- * at all was written — the caller hands the Contributor their draft back.
+ * A Day nobody has claimed yet and that has not revealed, or null once there
+ * is nothing left to deal. Read fresh on every attempt: a Day another
+ * Contributor just took is not offered a second time within the same call.
+ */
+async function dealADay(
+  database: D1Database,
+  calendarId: string,
+  year: number,
+): Promise<number | null> {
+  const claimable = claimableDays(year, new Date());
+  if (claimable.length === 0) return null;
+
+  const { results } = await database
+    .prepare('select day from submissions where calendar_id = ?1')
+    .bind(calendarId)
+    .all<{ day: number }>();
+  const taken = new Set(results.map((row) => row.day));
+  const free = claimable.filter((day) => !taken.has(day));
+  if (free.length === 0) return null;
+
+  return free[Math.floor(Math.random() * free.length)];
+}
+
+/**
+ * Deals a Day and stores the Tracks, in one transaction, first come first
+ * served against whoever else is dealt the same one. `'taken'` on the last
+ * attempt means the deck emptied out from under a very unlucky run of
+ * collisions — indistinguishable from `'full'` to the Contributor, who is told
+ * the same thing either way and keeps everything they typed.
  */
 export async function createSubmission(
   submitSlug: string,
-  day: number,
   draft: SubmissionDraft,
 ): Promise<ClaimResult> {
   const database = await db();
@@ -284,32 +312,37 @@ export async function createSubmission(
     .first<{ id: string; slug: string; year: number }>();
   if (!calendar) return 'not-found';
 
-  // A Day that has revealed can never be claimed, whatever the form posted.
-  if (!claimableDays(calendar.year, new Date()).includes(day)) return 'not-claimable';
-
-  const id = crypto.randomUUID().replaceAll('-', '');
-  const editToken = crypto.randomUUID().replaceAll('-', '');
   const variants = await readVariants(calendar.id);
 
-  try {
-    await database.batch([
-      database
-        .prepare(
-          `insert into submissions (id, calendar_id, day, credited_to, link, email, edit_token, created_at)
-           values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
-        )
-        .bind(id, calendar.id, day, draft.creditedTo, draft.link, draft.email, editToken, Date.now()),
-      ...variants.map(({ variant }) =>
-        trackUpsert(database, id, variant, draft.tracks[variant] ?? emptyTrack()),
-      ),
-    ]);
-  } catch (error) {
-    if (isDayTaken(error)) return 'taken';
-    throw error;
+  for (let attempt = 0; attempt < DEAL_ATTEMPTS; attempt++) {
+    const day = await dealADay(database, calendar.id, calendar.year);
+    if (day === null) return 'full';
+
+    const id = crypto.randomUUID().replaceAll('-', '');
+    const editToken = crypto.randomUUID().replaceAll('-', '');
+
+    try {
+      await database.batch([
+        database
+          .prepare(
+            `insert into submissions (id, calendar_id, day, credited_to, link, email, edit_token, created_at)
+             values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
+          )
+          .bind(id, calendar.id, day, draft.creditedTo, draft.link, draft.email, editToken, Date.now()),
+        ...variants.map(({ variant }) =>
+          trackUpsert(database, id, variant, draft.tracks[variant] ?? emptyTrack()),
+        ),
+      ]);
+    } catch (error) {
+      if (isDayTaken(error)) continue;
+      throw error;
+    }
+
+    await purgeCalendarPayload(calendar.slug);
+    return { editToken, calendarSlug: calendar.slug };
   }
 
-  await purgeCalendarPayload(calendar.slug);
-  return { editToken, calendarSlug: calendar.slug };
+  return 'taken';
 }
 
 /** A Track nobody has filled in yet: what a missing row reads as. */

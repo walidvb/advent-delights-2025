@@ -22,6 +22,9 @@ export type Calendar = {
   is_public: number;
 };
 
+/** A Calendar plus how many Days have a Submission, for the list's dot-grid. */
+export type CalendarWithCount = Calendar & { claimedCount: number };
+
 /**
  * The interface supports exactly these two, with its copy frozen; the labels
  * are stored per Calendar but unused for now.
@@ -128,14 +131,19 @@ export async function createCalendar(
   return slug;
 }
 
-export async function listCalendars(curatorId: string) {
+export async function listCalendars(curatorId: string): Promise<CalendarWithCount[]> {
   const { results } = await (await db())
     .prepare(
-      `select id, name, description, year, slug, submit_slug, is_public
-         from calendars where curator_id = ?1 order by created_at`,
+      `select c.id, c.name, c.description, c.year, c.slug, c.submit_slug, c.is_public,
+              count(s.id) as claimedCount
+         from calendars c
+         left join submissions s on s.calendar_id = c.id
+        where c.curator_id = ?1
+        group by c.id
+        order by c.created_at`,
     )
     .bind(curatorId)
-    .all<Calendar>();
+    .all<CalendarWithCount>();
   return results;
 }
 

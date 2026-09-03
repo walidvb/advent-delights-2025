@@ -65,14 +65,14 @@ deliberate action reveals a single Day, so seeing a spoiler is always a choice.
 15. As a Curator, I want a separate secret link for collecting Submissions, so that I can share the Calendar itself widely in December without leaving it open to new entries from strangers.
 16. As a Curator, I want to send that collection link to a group chat and have it just work for everyone, so that I don't have to generate and track a personal invitation for each of twenty-five people.
 17. As a Contributor, I want to submit without creating an account, so that taking part is a five-minute favour and not a signup.
-18. As a Contributor, I want to see which Days are still free before I commit, so that I can pick one that means something to me.
-19. As a Contributor, I want to choose my own Day rather than be assigned one, so that I can take my birthday, or the day I'll be travelling, or simply the number I like.
-20. As a Contributor, I don't want to see what anyone else submitted while I'm picking, so that my own experience of the Calendar isn't spoiled by helping build it.
-21. As a Contributor whose chosen Day gets taken while I'm still filling in the form, I want to be told clearly and be able to pick another without retyping everything, so that losing a race doesn't cost me my work.
+18. As a Contributor, I want to know roughly how full the Calendar is before I commit, so that I have a sense of how much company I'll have.
+19. As a Contributor, I want to be dealt a Day at random rather than choosing one, so that which Day is mine is a surprise to me too, and not a thing I have to weigh.
+20. As a Contributor, I don't want to see what anyone else submitted, so that my own experience of the Calendar isn't spoiled by helping build it.
+21. As a Contributor whose dealt Day turns out to have just been taken by someone else, I want to be told clearly and be dealt another without retyping everything, so that losing a race doesn't cost me my work.
 22. As a Contributor arriving at a Calendar where every Day is taken, I want to be told it's full, so that I don't fill in a form that can't be accepted.
 23. As a Contributor, I want to be gently stopped from claiming a second Day in the same Calendar, so that I don't accidentally take a slot meant for someone else.
 24. As a Curator, I want people to still be able to submit after December has started, so that a latecomer can take one of the remaining Days.
-25. As a Contributor arriving mid-December, I want to only be offered Days that haven't opened yet, so that I can't submit into a door people have already looked behind.
+25. As a Contributor arriving mid-December, I want to only be dealt a Day that hasn't opened yet, so that I can't submit into a door people have already looked behind.
 
 ### Submitting Tracks
 
@@ -145,8 +145,9 @@ rather than as a purely static export.
 - **Calendar management**: create, list, and configure Calendars. Owns Slug
   generation from the Calendar's name, collision handling by numeric suffix,
   Slug editing, and the public flag.
-- **Submission intake**: presents claimable Days, accepts a Submission, and
-  assigns it to a Day.
+- **Submission intake**: shows how full a Calendar is, accepts a Submission,
+  and deals it a random claimable Day rather than letting the Contributor
+  choose one.
 - **Track metadata lookup**: given a Track's URL, attempts to retrieve title,
   artist and artwork.
 - **Image intake**: accepts an uploaded cover image and stores it.
@@ -166,8 +167,9 @@ to 25. It carries the Contributor's credited name, an optional link to
 themselves, an optional email address, and a secret token granting edit rights.
 
 **A Calendar and a Day number together must be unique.** This constraint is what
-implements first-come-first-served: concurrent claims on the same Day cannot
-both succeed, and the loser is told to pick another.
+makes a random deal safe under concurrency: two Contributors dealt the same Day
+at the same moment cannot both insert successfully, and the loser is dealt
+another rather than told to pick one.
 
 A **Track** belongs to a Submission and carries its Variant. A Submission and a
 Variant together must be unique. A Track holds its source URL, title, artist,
@@ -185,6 +187,27 @@ The data model supports any number of Variants per Calendar. The interface
 supports exactly two, `light` and `heavy`, with the existing presentation copy
 frozen. Per-Calendar Variant labels are stored but unused for now. Introducing a
 third Variant is a data change plus interface work; it is not a migration.
+
+### Random assignment
+
+A Contributor is dealt a Day at random from the Calendar's still-claimable
+ones — never shown a grid to pick from, before or after. This replaced an
+earlier design where a Contributor saw every free Day and chose one; the
+platform now treats which Day is whose as one more thing nobody, including the
+Contributor, gets to see coming.
+
+The Day is dealt at the moment of final submission, not when the Contributor
+starts the form. The claim form is filled in first — two Tracks, a credited
+name — and only submitting picks a random claimable Day and inserts the
+Submission, in the same step, atomically. This is deliberate: dealing the Day
+up front, before the form is filled in, would mean an abandoned form leaves a
+Day permanently claimed with nothing behind it, and no way to notice or free
+it. Claim-on-submit avoids that exactly as it did before, and losing a race —
+the Day chosen collides with one just taken — costs nothing but a re-deal, since
+the Contributor never knew which Day it was anyway.
+
+The Contributor sees only how full the Calendar is, in round terms, while
+filling in the form.
 
 ### Reveal
 
@@ -219,11 +242,23 @@ consumes a daily deployment allowance.
 ### Curator visibility
 
 The dashboard payload contains claim state and Contributor names. **It must not
-contain Track titles, URLs, descriptions or cover images.** Revealing a single
-Day is a separate, explicitly requested action.
+contain Track titles, URLs, descriptions or cover images.** Names are hidden by
+default behind a "Show names" switch the Curator flips themselves — a Curator
+only needs a name to chase the people who haven't submitted, so showing them is
+the occasional case, not the resting one. Nothing about which Days are claimed
+is hidden either way.
+
+Revealing a single Day is a separate, explicitly requested action: reached by
+clicking that Day and nothing else, and taking effect the moment the Curator
+clicks to reveal it — one click, immediate, no second confirmation step. A
+revealed Day stays marked as such on the Curator's grid from then on, so the
+running count of what has been given away is visible at a glance; that marker
+is the one thing this module persists about a Day's content, and it persists
+no content itself.
 
 Deletion operates on a Day, and does not require the content to have been
-revealed first.
+revealed first. It sends no notification to the Contributor — the sign-in code
+and the Submission receipt remain the only mail this platform ever sends.
 
 ### Access
 

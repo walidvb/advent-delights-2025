@@ -1,115 +1,129 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { getCurator } from '@/lib/auth';
-import { getOwnedCalendar } from '@/lib/calendars';
+import { calendarPath, getOwnedCalendar, submitPath } from '@/lib/calendars';
 import { getClaims } from '@/lib/curation';
 import { updateCalendarAction } from '@/app/dashboard/actions';
+import { CopyLink } from '@/app/dashboard/CopyLink';
+import { ClaimGrid } from './ClaimGrid';
 
 const field =
   'w-full rounded-md border border-input bg-background px-3 py-2 text-base outline-none focus:ring-2 focus:ring-ring';
-const button = 'rounded-md bg-primary px-3 py-2 font-medium text-primary-foreground hover:opacity-90';
+
+async function origin() {
+  const incoming = await headers();
+  return `${incoming.get('x-forwarded-proto') ?? 'http'}://${incoming.get('host')}`;
+}
 
 export default async function CalendarSettingsPage({ params }: { params: Promise<{ id: string }> }) {
   const curator = await getCurator();
   if (!curator) redirect('/sign-in');
 
-  // Someone else's Calendar is indistinguishable from one that doesn't exist.
   const id = (await params).id;
-  const [calendar, claims] = await Promise.all([
+  const [calendar, claims, base] = await Promise.all([
     getOwnedCalendar(id, curator.id),
     getClaims(id, curator.id),
+    origin(),
   ]);
   if (!calendar || !claims) notFound();
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 p-6">
-      <Link href="/dashboard" className="text-sm underline text-muted-foreground">
-        Your Calendars
-      </Link>
-
-      <h1 className="font-title text-4xl">
-        {calendar.name} <span className="text-2xl text-muted-foreground">{calendar.year}</span>
-      </h1>
-
-      <section className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 className="font-title text-2xl">Who has claimed what</h2>
-          <p className="text-sm text-muted-foreground">
-            {claims.claimedCount} of {claims.days.length} Days claimed
-          </p>
+    <main className="min-h-dvh bg-[url('/light.webp')] bg-cover bg-fixed bg-center">
+      <header className="flex items-center justify-between gap-4 border-b border-black/5 bg-white/40 px-6 py-4 backdrop-blur sm:px-10">
+        <div className="flex items-center gap-2 text-sm text-zinc-600">
+          <Link href="/dashboard">Your calendars</Link>
+          <span className="text-zinc-400">/</span>
+          <span className="text-zinc-900">{calendar.name}</span>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Names only. Nothing anyone submitted is on this page, or in what your browser was
-          sent to build it — December should still be a surprise for you too.
-        </p>
+      </header>
 
-        <ul className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-2">
-          {claims.days.map((day) => (
-            <li key={day.day} className="rounded-md border border-border p-3 text-sm">
-              <span className="font-title text-lg">{day.day}</span>{' '}
-              {day.claimedBy ? (
-                <Link
-                  href={`/dashboard/calendar/${calendar.id}/day/${day.day}`}
-                  className="underline"
-                >
-                  {day.claimedBy}
-                </Link>
-              ) : (
-                <span className="text-muted-foreground">
-                  {day.claimable ? 'free' : 'empty — opened'}
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
+      <div className="mx-auto grid max-w-5xl gap-8 px-6 py-10 sm:px-10 lg:grid-cols-[1fr_360px]">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="font-title text-3xl font-light">
+              {calendar.name} <span className="text-lg text-zinc-500">{calendar.year}</span>
+            </h1>
+            <p className="text-sm text-zinc-600">
+              {claims.claimedCount} of {claims.days.length} days claimed. Names are hidden until you
+              ask — contents never.
+            </p>
+          </div>
 
-      <form action={updateCalendarAction} className="flex flex-col gap-3 border-t border-border pt-6">
-        <h2 className="font-title text-2xl">Settings</h2>
-        <input type="hidden" name="id" value={calendar.id} />
+          <ClaimGrid calendarId={calendar.id} days={claims.days} />
+        </div>
 
-        <label htmlFor="name" className="text-sm">
-          Name
-        </label>
-        <input id="name" name="name" required defaultValue={calendar.name} className={field} />
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4 rounded-2xl border border-white/70 bg-white/95 p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_8px_24px_rgba(0,0,0,.06)]">
+            <span className="font-mono text-[11px] uppercase tracking-wide text-zinc-400">
+              Two links, two jobs
+            </span>
+            <CopyLink
+              label="Submit link"
+              hint="send this now — how people claim a day"
+              url={base + submitPath(calendar.submit_slug)}
+            />
+            <CopyLink
+              label="Calendar link"
+              hint="send in December — nothing opens early"
+              url={base + calendarPath(calendar.slug)}
+            />
+          </div>
 
-        <label htmlFor="description" className="text-sm">
-          Description <span className="text-muted-foreground">(optional)</span>
-        </label>
-        <textarea
-          id="description"
-          name="description"
-          rows={2}
-          defaultValue={calendar.description}
-          className={field}
-        />
+          <form
+            action={updateCalendarAction}
+            className="flex flex-col gap-4 rounded-2xl border border-white/70 bg-white/95 p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_8px_24px_rgba(0,0,0,.06)]"
+          >
+            <span className="font-mono text-[11px] uppercase tracking-wide text-zinc-400">Settings</span>
+            <input type="hidden" name="id" value={calendar.id} />
 
-        <label htmlFor="slug" className="text-sm">
-          Address
-        </label>
-        <input id="slug" name="slug" defaultValue={calendar.slug} className={`${field} font-mono`} />
-        <p className="text-xs text-muted-foreground">
-          The readable half of the pair, so it is guessable by design. If it is taken you&apos;ll get
-          the next free number on the end. Want it hard to find? Choose something nobody would guess.
-        </p>
+            <label htmlFor="name" className="text-sm">
+              Name
+            </label>
+            <input id="name" name="name" required defaultValue={calendar.name} className={field} />
 
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            name="is_public"
-            defaultChecked={Boolean(calendar.is_public)}
-            className="size-4"
-          />
-          List this Calendar publicly
-        </label>
-        <p className="text-xs text-muted-foreground">
-          Listing only. The link works for anyone holding it either way.
-        </p>
+            <label htmlFor="description" className="text-sm">
+              Description <span className="text-zinc-400">(optional)</span>
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              rows={2}
+              defaultValue={calendar.description}
+              className={field}
+            />
 
-        <button type="submit" className={`${button} self-start`}>
-          Save
-        </button>
-      </form>
+            <label htmlFor="slug" className="text-sm">
+              Address
+            </label>
+            <input id="slug" name="slug" defaultValue={calendar.slug} className={`${field} font-mono text-sm`} />
+            <p className="-mt-2 text-xs text-zinc-400">
+              Changing this breaks links you&apos;ve already sent.
+            </p>
+
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="is_public"
+                defaultChecked={Boolean(calendar.is_public)}
+                className="size-4"
+              />
+              Public
+            </label>
+            <p className="-mt-2 text-xs text-zinc-400">
+              Listed for others to discover. Private isn&apos;t advertised — anyone with the link
+              can still open it.
+            </p>
+
+            <button
+              type="submit"
+              className="self-start rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-zinc-50 hover:opacity-90"
+            >
+              Save changes
+            </button>
+          </form>
+        </div>
+      </div>
     </main>
   );
 }

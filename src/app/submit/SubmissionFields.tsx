@@ -35,15 +35,14 @@ const SETTLE_MS = 600;
  */
 export type UploadAuth = { submit_slug: string } | { edit_token: string };
 
-export function SubmissionFields({
-  variants,
-  draft,
-  auth,
-}: {
-  variants: Variant[];
-  draft: SubmissionDraft;
-  auth: UploadAuth;
-}) {
+/**
+ * Who to credit: the name, an optional link to themselves, an optional email.
+ * Its own component because the claim wizard shows it as a step on its own,
+ * after both Tracks rather than before them — the edit page still shows it
+ * first, alongside everything else, since there is no wizard once a Day is
+ * already yours.
+ */
+export function ContributorFields({ draft }: { draft: SubmissionDraft }) {
   return (
     <>
       <label htmlFor="credited_to" className="text-sm">
@@ -85,7 +84,22 @@ export function SubmissionFields({
         Only ever used to send you your edit link, so you don&apos;t lose it. Leave it empty and
         you&apos;ll get the link on screen instead.
       </p>
+    </>
+  );
+}
 
+export function SubmissionFields({
+  variants,
+  draft,
+  auth,
+}: {
+  variants: Variant[];
+  draft: SubmissionDraft;
+  auth: UploadAuth;
+}) {
+  return (
+    <>
+      <ContributorFields draft={draft} />
       {variants.map(({ variant, label }) => (
         // Absent for a Variant nobody has filled in yet, which is the blank form.
         <TrackFields
@@ -114,7 +128,7 @@ type Prefillable = { url: string; title: string; artist: string; coverUrl: strin
  * do anyway. A source we don't recognise is silent, because it is a perfectly
  * normal thing to paste and not a failure to report.
  */
-function TrackFields({
+export function TrackFields({
   variant,
   label,
   track,

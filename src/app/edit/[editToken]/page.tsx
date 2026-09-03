@@ -11,12 +11,15 @@ import { EditForm } from './EditForm';
  * so this page can show no one else's — there is no id in the URL to change to
  * somebody else's row. A token nobody holds is a plain 404.
  *
- * Once the Calendar is an Archive the link still works — it names the Day it
- * always named, and points at the Calendar, where every Day is now open and the
- * Contributor can read their own Submission as everyone else does. What it no
- * longer does is offer to change it. The refusal itself is
- * `updateSubmission`'s; dropping the form is only the courtesy of not offering
- * a button that cannot work.
+ * **The Day is never named here.** A Contributor is dealt a Day at random and
+ * is not told which one, on the same footing as everyone else who has not yet
+ * seen it open — this page is exactly where that would leak if it named it.
+ *
+ * Once the Calendar is an Archive the link still works, and points at the
+ * Calendar, where every Day is now open and the Contributor can read their own
+ * Submission as everyone else does. What it no longer does is offer to change
+ * it. The refusal itself is `updateSubmission`'s; dropping the form is only the
+ * courtesy of not offering a button that cannot work.
  */
 export default async function EditSubmissionPage({
   params,
@@ -30,14 +33,11 @@ export default async function EditSubmissionPage({
   return (
     <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-6 p-6">
       <div>
-        <h1 className="font-title text-4xl">
-          Day {submission.day}{' '}
-          <span className="text-2xl text-muted-foreground">{submission.calendarName}</span>
-        </h1>
+        <h1 className="font-title text-4xl">{submission.calendarName}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {submission.archived
             ? 'Your Submission, as it will stay.'
-            : 'Your Submission. Change anything you like — keep this link and you can come back.'}
+            : 'Your Submission. Change anything you like — keep this link and you can come back. Your Day stays sealed, and still a surprise to you.'}
         </p>
       </div>
 
