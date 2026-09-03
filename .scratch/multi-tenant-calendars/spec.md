@@ -250,11 +250,11 @@ is hidden either way.
 
 Revealing a single Day is a separate, explicitly requested action: reached by
 clicking that Day and nothing else, and taking effect the moment the Curator
-clicks to reveal it — one click, immediate, no second confirmation step. A
-revealed Day stays marked as such on the Curator's grid from then on, so the
-running count of what has been given away is visible at a glance; that marker
-is the one thing this module persists about a Day's content, and it persists
-no content itself.
+clicks to reveal it — one click, immediate, no second confirmation step.
+Nothing about having looked is recorded anywhere: this is the Curator
+overriding their own blindness for a moment because they have a reason to,
+not a fact about the Day worth remembering. Looking again re-reads the same
+Tracks.
 
 Deletion operates on a Day, and does not require the content to have been
 revealed first. It sends no notification to the Contributor — the sign-in code
@@ -267,9 +267,14 @@ guessable. The Curator may edit it, so a Curator wanting obscurity chooses an
 obscure Slug. The public flag governs *listing* only; an unlisted Calendar's
 Slug still works for anyone holding it.
 
-The Submit slug is a separate secret and is never derived from the name. Neither
-Slug rotates. A leaked Submit slug is out of scope; rotation would be one field
-and one control if it becomes a real problem.
+The Submit slug is a separate secret and is never derived from the name. It is
+two words from a small musical vocabulary (`mellow-tempo`, not a hex blob) —
+readable enough to read aloud or paste into a group chat without it looking
+like a password, at the cost of far less entropy than a random token. That
+trade is deliberate: this is a link shared with people the Curator invited, not
+a secret meant to resist being guessed by a stranger enumerating the word
+space. Neither Slug rotates. A leaked Submit slug is out of scope; rotation
+would be one field and one control if it becomes a real problem.
 
 ### Images
 

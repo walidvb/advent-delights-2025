@@ -20,13 +20,7 @@ import { getOwnedCalendar } from './calendars';
  */
 
 /** One Day of the Curator's grid. No Track content, by construction. */
-export type CuratedDay = {
-  day: number;
-  claimedBy: string | null;
-  claimable: boolean;
-  /** Whether this Curator has already spoiled this Day for themselves. */
-  spoiled: boolean;
-};
+export type CuratedDay = { day: number; claimedBy: string | null; claimable: boolean };
 
 /** The claim state of a whole Calendar: the grid, and how many Days are in. */
 export type CalendarClaims = { days: CuratedDay[]; claimedCount: number };
@@ -65,24 +59,20 @@ export async function getClaims(
   if (!calendar) return null;
 
   const { results } = await (await db())
-    .prepare('select day, credited_to, spoiled_at from submissions where calendar_id = ?1')
+    .prepare('select day, credited_to from submissions where calendar_id = ?1')
     .bind(calendarId)
-    .all<{ day: number; credited_to: string; spoiled_at: number | null }>();
+    .all<{ day: number; credited_to: string }>();
 
-  const byDay = new Map(results.map((row) => [row.day, row]));
+  const claimedBy = new Map(results.map((row) => [row.day, row.credited_to]));
   const claimable = new Set(claimableDays(calendar.year, new Date()));
 
   return {
-    claimedCount: byDay.size,
-    days: Array.from({ length: DAYS_IN_CALENDAR }, (_, i) => {
-      const row = byDay.get(i + 1);
-      return {
-        day: i + 1,
-        claimedBy: row?.credited_to ?? null,
-        claimable: claimable.has(i + 1),
-        spoiled: Boolean(row?.spoiled_at),
-      };
-    }),
+    claimedCount: claimedBy.size,
+    days: Array.from({ length: DAYS_IN_CALENDAR }, (_, i) => ({
+      day: i + 1,
+      claimedBy: claimedBy.get(i + 1) ?? null,
+      claimable: claimable.has(i + 1),
+    })),
   };
 }
 
@@ -106,10 +96,9 @@ export async function getClaim(
  * tells the Curator nothing at all about Day 8.
  *
  * One click, immediate, no separate confirmation step — the click that reaches
- * this function is the whole of the "are you sure". It also marks the Day
- * `spoiled_at` on its first call, so the Curator's grid keeps showing it as
- * spoiled from then on; a second call re-reads the same Tracks without moving
- * the timestamp.
+ * this function is the whole of the "are you sure". Nothing about having
+ * looked is written down anywhere: this is a Curator overriding their own
+ * blindness for a moment, not a fact about the Day worth remembering.
  */
 export async function revealDay(
   calendarId: string,
@@ -118,10 +107,9 @@ export async function revealDay(
 ): Promise<RevealedDay | null> {
   if (!(await getOwnedCalendar(calendarId, curatorId))) return null;
 
-  const database = await db();
-  const { results } = await database
+  const { results } = await (await db())
     .prepare(
-      `select s.id, s.link, v.variant, v.label, t.url, t.title, t.artist, t.description,
+      `select s.link, v.variant, v.label, t.url, t.title, t.artist, t.description,
               t.buy_link, t.cover_key, t.cover_url
          from submissions s
          join calendar_variants v on v.calendar_id = s.calendar_id
@@ -131,7 +119,6 @@ export async function revealDay(
     )
     .bind(calendarId, day)
     .all<{
-      id: string;
       link: string;
       variant: string;
       label: string;
@@ -145,11 +132,6 @@ export async function revealDay(
     }>();
 
   if (results.length === 0) return null;
-
-  await database
-    .prepare('update submissions set spoiled_at = coalesce(spoiled_at, ?2) where id = ?1')
-    .bind(results[0].id, Date.now())
-    .run();
 
   return {
     link: results[0].link,

@@ -37,6 +37,57 @@ const VARIANTS = [
 /** Longest a derived Slug gets before a numeric suffix is even considered. */
 const MAX_SLUG_LENGTH = 60;
 
+/**
+ * The Submit slug's own small vocabulary — musical, so `mellow-tempo` reads as
+ * belonging here rather than as a password. Picked from the codebase's own
+ * domain, not a general-purpose word list: no library does "musical" for you,
+ * and two short arrays are the whole of what a trivial one would buy.
+ */
+const SUBMIT_ADJECTIVES = [
+  'mellow', 'moody', 'dreamy', 'groovy', 'hazy', 'velvet', 'electric', 'acoustic',
+  'analog', 'muted', 'distant', 'golden', 'midnight', 'vintage', 'cosmic', 'lofi',
+  'humming', 'echoing', 'faded', 'silver', 'amber', 'sonic', 'tender', 'wistful',
+  'restless', 'gentle', 'wandering', 'glowing', 'hollow', 'hushed', 'radiant',
+  'tangled', 'drifting', 'smoky', 'quiet', 'tidal', 'warped', 'crimson', 'azure',
+  'looping', 'staticky', 'dusty', 'shimmering', 'brassy', 'wintry',
+];
+const SUBMIT_NOUNS = [
+  'tempo', 'chorus', 'cassette', 'vinyl', 'reverb', 'echo', 'melody', 'rhythm',
+  'harmony', 'cadence', 'refrain', 'bassline', 'groove', 'riff', 'bridge', 'verse',
+  'hook', 'drone', 'static', 'hum', 'tremolo', 'feedback', 'mixtape', 'playlist',
+  'encore', 'crescendo', 'coda', 'sonata', 'ballad', 'anthem', 'lullaby', 'waltz',
+  'sample', 'remix', 'session', 'jukebox', 'turntable', 'speaker', 'amplifier',
+  'interlude', 'fadeout', 'downbeat', 'overtone',
+];
+
+const pick = (words: string[]) => words[Math.floor(Math.random() * words.length)];
+
+/** Two musical words, e.g. `mellow-tempo` — readable, but still the secret half. */
+function submitSlugCandidate() {
+  return `${pick(SUBMIT_ADJECTIVES)}-${pick(SUBMIT_NOUNS)}`;
+}
+
+/**
+ * A submit_slug nothing else already holds. Collisions are for real here, not
+ * theoretical — this vocabulary is small on purpose, so a plain random pick can
+ * repeat far sooner than 122 random bits ever would. A numeral is appended
+ * after a run of bad luck rather than trying forever.
+ */
+async function freeSubmitSlug(): Promise<string> {
+  const database = await db();
+  for (let attempt = 1; attempt <= 20; attempt++) {
+    const candidate = attempt <= 15 ? submitSlugCandidate() : `${submitSlugCandidate()}-${attempt}`;
+    const taken = await database
+      .prepare('select 1 from calendars where submit_slug = ?1')
+      .bind(candidate)
+      .first();
+    if (!taken) return candidate;
+  }
+  // Bounded above only to guarantee this returns; a Calendar can be created
+  // without ever actually exhausting a few-thousand-word space.
+  return `${submitSlugCandidate()}-${crypto.randomUUID().slice(0, 4)}`;
+}
+
 /** Readable words, not single letters — the Slug is shared with humans. */
 export const calendarPath = (slug: string) => `/calendar/${slug}`;
 export const submitPath = (submitSlug: string) => `/submit/${submitSlug}`;
@@ -90,8 +141,9 @@ async function freeSlug(base: string, exceptId: string | null): Promise<ChosenSl
  * Creates a Calendar for the current year and returns the Slug it got, or
  * `'name'` if there was no name to derive an address from.
  *
- * The Submit slug is 122 random bits from `crypto.randomUUID`, generated here
- * and never derived from the name — it is the secret half of the pair.
+ * The Submit slug is two musical words, generated here and never derived from
+ * the name — it is the secret half of the pair, just a readable one now
+ * rather than a hex blob.
  */
 export async function createCalendar(
   curatorId: string,
@@ -102,7 +154,7 @@ export async function createCalendar(
   if (!name) return 'name';
 
   const id = crypto.randomUUID();
-  const slug = await freeSlug(slugify(name), null);
+  const [slug, submitSlug] = await Promise.all([freeSlug(slugify(name), null), freeSubmitSlug()]);
   const database = await db();
 
   await database.batch([
@@ -118,7 +170,7 @@ export async function createCalendar(
         rawDescription.trim(),
         new Date().getFullYear(),
         slug.slug,
-        crypto.randomUUID().replaceAll('-', ''),
+        submitSlug,
         Date.now(),
       ),
     ...VARIANTS.map((v, position) =>

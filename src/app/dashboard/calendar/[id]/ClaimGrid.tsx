@@ -45,9 +45,7 @@ export function ClaimGrid({ calendarId, days }: { calendarId: string; days: Cura
           const claimed = Boolean(day.claimedBy);
           const label = claimed ? (showNames ? day.claimedBy : 'claimed') : day.claimable ? 'free' : 'unclaimed';
           const tone = claimed
-            ? day.spoiled
-              ? 'border border-zinc-900 bg-white/95'
-              : 'border border-white/70 bg-white/90 shadow-[0_1px_2px_rgba(0,0,0,.04)]'
+            ? 'border border-white/70 bg-white/90 shadow-[0_1px_2px_rgba(0,0,0,.04)]'
             : day.claimable
               ? 'border border-dashed border-zinc-900/25 bg-white/45'
               : 'border border-zinc-900/10 bg-zinc-900/25 text-white/70';
@@ -60,9 +58,6 @@ export function ClaimGrid({ calendarId, days }: { calendarId: string; days: Cura
                 {day.day}
               </span>
               <span className="line-clamp-2 px-1 text-[11px] font-medium leading-tight">{label}</span>
-              {day.spoiled && (
-                <span className="absolute bottom-1.5 right-1.5 size-1.5 rounded-full bg-red-700" />
-              )}
             </div>
           );
 
@@ -84,9 +79,6 @@ export function ClaimGrid({ calendarId, days }: { calendarId: string; days: Cura
         </span>
         <span className="flex items-center gap-1.5">
           <span className="size-2.5 rounded-sm border border-dashed border-zinc-900/30" /> free
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="size-1.5 rounded-full bg-red-700" /> spoiled
         </span>
       </div>
     </div>
