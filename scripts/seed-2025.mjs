@@ -205,8 +205,26 @@ if (unresolved.length) console.warn(`WARNING — seeded with no cover: ${unresol
 // Upload the covers. The key is the filename, so a re-run overwrites the same
 // object instead of adding one.
 
-const wrangler = (args) =>
-  execFileSync('npx', ['wrangler', ...args, target], { cwd: ROOT, encoding: 'utf-8' });
+/**
+ * One wrangler call, retried.
+ *
+ * Every call here goes over the network, and a single transient failure used to
+ * abort the whole seed part-way — leaving covers uploaded but no rows, which is
+ * a worse state than either end. Cloudflare's API answers `fetch failed` often
+ * enough on a shaky link that retrying is the difference between a seed that
+ * completes and one that never does.
+ */
+const wrangler = (args, attempts = 4) => {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return execFileSync('npx', ['wrangler', ...args, target], { cwd: ROOT, encoding: 'utf-8' });
+    } catch (error) {
+      if (attempt >= attempts) throw error;
+      process.stdout.write(`\n  retrying (${attempt}/${attempts - 1})…`);
+      execFileSync('sleep', [String(attempt * 3)]);
+    }
+  }
+};
 
 console.log(`\nUploading ${usedFiles.length} covers to ${BUCKET} (${target})…`);
 for (const [i, file] of usedFiles.entries()) {
