@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "advent-diggers-25",
+  "name": "advent-delights-25",
   "main": ".open-next/worker.js",
   "compatibility_date": "2025-11-30",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
