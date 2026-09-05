@@ -7,46 +7,41 @@ import { CalendarGrid } from './CalendarGrid';
 import { DetailsCard } from './DetailsCard';
 import { Player } from './Player';
 import { AboutSidebar } from './AboutSidebar';
-import { Track, Participant } from './types';
+import { Day, Contributor } from './types';
 import { useAdventDay } from './AdventDayContext';
 
 interface AdventCalendarProps {
-  tracks: Track[];
-  participants: Participant[];
+  days: Day[];
+  contributors: Contributor[];
 }
 
-export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
+export function AdventCalendar({ days, contributors }: AdventCalendarProps) {
   const {
-    revealedIndices,
-    addRevealedIndex,
+    openedIndices,
+    addOpenedIndex,
     variant,
     shuffleEnabled,
     setShuffleEnabled,
   } = useAdventDay();
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [hoveredTrack, setHoveredTrack] = useState<Track | null>(null);
+  const [hoveredDay, setHoveredDay] = useState<Day | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isAboutOpen, setIsAboutOpen] = useState(false);
-  const [mobileSelectedTrack, setMobileSelectedTrack] = useState<Track | null>(
-    null
-  );
+  const [mobileSelectedDay, setMobileSelectedDay] = useState<Day | null>(null);
 
-  const revealedSet = useMemo(
-    () => new Set(revealedIndices),
-    [revealedIndices]
-  );
+  const openedSet = useMemo(() => new Set(openedIndices), [openedIndices]);
 
-  // Sort revealed indices to navigate through them in order
-  const sortedRevealedIndices = useMemo(() => {
-    return [...revealedIndices].sort((a, b) => a - b);
-  }, [revealedIndices]);
+  // Sort opened indices to navigate through them in order
+  const sortedOpenedIndices = useMemo(() => {
+    return [...openedIndices].sort((a, b) => a - b);
+  }, [openedIndices]);
 
   const handleReveal = useCallback(
     (index: number) => {
-      addRevealedIndex(index);
+      addOpenedIndex(index);
     },
-    [addRevealedIndex]
+    [addOpenedIndex]
   );
 
   const handlePlay = useCallback(
@@ -67,10 +62,10 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
   }, [isPlaying]);
 
   const handleNext = useCallback(() => {
-    if (playingIndex === null || sortedRevealedIndices.length === 0) return;
+    if (playingIndex === null || sortedOpenedIndices.length === 0) return;
 
     if (shuffleEnabled) {
-      const availableIndices = sortedRevealedIndices.filter(
+      const availableIndices = sortedOpenedIndices.filter(
         (i) => i !== playingIndex
       );
       if (availableIndices.length > 0) {
@@ -78,17 +73,17 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
           availableIndices[Math.floor(Math.random() * availableIndices.length)];
         setPlayingIndex(randomIndex);
       } else {
-        setPlayingIndex(sortedRevealedIndices[0]);
+        setPlayingIndex(sortedOpenedIndices[0]);
       }
     } else {
-      const currentPos = sortedRevealedIndices.indexOf(playingIndex);
+      const currentPos = sortedOpenedIndices.indexOf(playingIndex);
       if (currentPos === -1) {
-        setPlayingIndex(sortedRevealedIndices[0]);
+        setPlayingIndex(sortedOpenedIndices[0]);
       } else {
-        const isLastTrack = currentPos === sortedRevealedIndices.length - 1;
+        const isLastTrack = currentPos === sortedOpenedIndices.length - 1;
         if (isLastTrack) {
           setShuffleEnabled(true);
-          const availableIndices = sortedRevealedIndices.filter(
+          const availableIndices = sortedOpenedIndices.filter(
             (i) => i !== playingIndex
           );
           if (availableIndices.length > 0) {
@@ -98,35 +93,35 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
               ];
             setPlayingIndex(randomIndex);
           } else {
-            setPlayingIndex(sortedRevealedIndices[0]);
+            setPlayingIndex(sortedOpenedIndices[0]);
           }
         } else {
           const nextPos = currentPos + 1;
-          setPlayingIndex(sortedRevealedIndices[nextPos]);
+          setPlayingIndex(sortedOpenedIndices[nextPos]);
         }
       }
     }
     setIsPlaying(true);
-  }, [playingIndex, sortedRevealedIndices, shuffleEnabled, setShuffleEnabled]);
+  }, [playingIndex, sortedOpenedIndices, shuffleEnabled, setShuffleEnabled]);
 
   const handlePrevious = useCallback(() => {
-    if (playingIndex === null || sortedRevealedIndices.length === 0) return;
+    if (playingIndex === null || sortedOpenedIndices.length === 0) return;
 
-    const currentPos = sortedRevealedIndices.indexOf(playingIndex);
+    const currentPos = sortedOpenedIndices.indexOf(playingIndex);
     if (currentPos === -1) {
-      setPlayingIndex(sortedRevealedIndices[sortedRevealedIndices.length - 1]);
+      setPlayingIndex(sortedOpenedIndices[sortedOpenedIndices.length - 1]);
     } else {
       const prevPos =
-        (currentPos - 1 + sortedRevealedIndices.length) %
-        sortedRevealedIndices.length;
-      setPlayingIndex(sortedRevealedIndices[prevPos]);
+        (currentPos - 1 + sortedOpenedIndices.length) %
+        sortedOpenedIndices.length;
+      setPlayingIndex(sortedOpenedIndices[prevPos]);
     }
     setIsPlaying(true);
-  }, [playingIndex, sortedRevealedIndices]);
+  }, [playingIndex, sortedOpenedIndices]);
 
   const handleHover = useCallback(
-    (track: Track | null, event: React.MouseEvent | null) => {
-      setHoveredTrack(track);
+    (day: Day | null, event: React.MouseEvent | null) => {
+      setHoveredDay(day);
       if (event) {
         setMousePosition({ x: event.clientX, y: event.clientY });
       }
@@ -134,29 +129,29 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
     []
   );
 
-  const handleMobileSelect = useCallback((track: Track) => {
-    setMobileSelectedTrack(track);
+  const handleMobileSelect = useCallback((day: Day) => {
+    setMobileSelectedDay(day);
   }, []);
 
   const handleCloseMobileDetails = useCallback(() => {
-    setMobileSelectedTrack(null);
+    setMobileSelectedDay(null);
   }, []);
 
   const handleMobilePlay = useCallback(() => {
-    if (mobileSelectedTrack) {
-      handlePlay(mobileSelectedTrack.dayIndex);
+    if (mobileSelectedDay) {
+      handlePlay(mobileSelectedDay.dayIndex);
     }
-  }, [mobileSelectedTrack, handlePlay]);
+  }, [mobileSelectedDay, handlePlay]);
 
   const handleDetailsPlay = useCallback(() => {
-    if (hoveredTrack) {
-      handlePlay(hoveredTrack.dayIndex);
+    if (hoveredDay) {
+      handlePlay(hoveredDay.dayIndex);
     }
-  }, [hoveredTrack, handlePlay]);
+  }, [hoveredDay, handlePlay]);
 
-  const currentTrack =
+  const currentDay =
     playingIndex !== null
-      ? tracks.find((t) => t.dayIndex === playingIndex) || null
+      ? days.find((d) => d.dayIndex === playingIndex) || null
       : null;
 
   return (
@@ -178,8 +173,8 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
       </AnimatePresence>
       <Header onAboutClick={() => setIsAboutOpen(true)} />
       <CalendarGrid
-        tracks={tracks}
-        revealedIndices={revealedSet}
+        days={days}
+        revealedIndices={openedSet}
         playingIndex={playingIndex}
         onReveal={handleReveal}
         onPlay={handlePlay}
@@ -187,19 +182,19 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
         onMobileSelect={handleMobileSelect}
       />
       <DetailsCard
-        track={hoveredTrack}
+        day={hoveredDay}
         position={mousePosition}
-        isPlaying={isPlaying && hoveredTrack?.dayIndex === playingIndex}
+        isPlaying={isPlaying && hoveredDay?.dayIndex === playingIndex}
         onPlay={handleDetailsPlay}
-        mobileTrack={mobileSelectedTrack}
+        mobileDay={mobileSelectedDay}
         onCloseMobile={handleCloseMobileDetails}
         onMobilePlay={handleMobilePlay}
         isMobilePlaying={
-          isPlaying && mobileSelectedTrack?.dayIndex === playingIndex
+          isPlaying && mobileSelectedDay?.dayIndex === playingIndex
         }
       />
       <Player
-        track={currentTrack}
+        day={currentDay}
         isPlaying={isPlaying}
         onPlayPause={handlePlayPause}
         onNext={handleNext}
@@ -208,7 +203,7 @@ export function AdventCalendar({ tracks, participants }: AdventCalendarProps) {
       <AboutSidebar
         isOpen={isAboutOpen}
         onClose={() => setIsAboutOpen(false)}
-        participants={participants}
+        contributors={contributors}
       />
     </div>
   );

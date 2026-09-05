@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  output: 'export',
   images: {
     unoptimized: true,
     remotePatterns: [
@@ -23,3 +23,6 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+// Makes the wrangler.jsonc bindings (DB, BUCKET) available to `next dev`.
+initOpenNextCloudflareForDev();

@@ -1,20 +1,20 @@
 'use client';
 
 import { CalendarCard } from './CalendarCard';
-import { Track } from './types';
+import { Day } from './types';
 
 interface CalendarGridProps {
-  tracks: Track[];
+  days: Day[];
   revealedIndices: Set<number>;
   playingIndex: number | null;
   onReveal: (index: number) => void;
   onPlay: (index: number) => void;
-  onHover: (track: Track | null, event: React.MouseEvent | null) => void;
-  onMobileSelect: (track: Track) => void;
+  onHover: (day: Day | null, event: React.MouseEvent | null) => void;
+  onMobileSelect: (day: Day) => void;
 }
 
 export function CalendarGrid({
-  tracks,
+  days,
   revealedIndices,
   playingIndex,
   onReveal,
@@ -25,16 +25,16 @@ export function CalendarGrid({
   return (
     <div className="overflow-auto px-6 py-4">
       <div className="grid grid-cols-2 md:grid-cols-5 xl:grid-cols-7 gap-4">
-        {tracks.map((track, index) => (
+        {days.map((day, index) => (
           <CalendarCard
-            key={track.dayIndex}
-            track={track}
-            isRevealed={revealedIndices.has(track.dayIndex)}
-            isPlaying={playingIndex === track.dayIndex}
-            onReveal={() => onReveal(track.dayIndex)}
-            onPlay={() => onPlay(track.dayIndex)}
+            key={day.dayIndex}
+            day={day}
+            isRevealed={revealedIndices.has(day.dayIndex)}
+            isPlaying={playingIndex === day.dayIndex}
+            onReveal={() => onReveal(day.dayIndex)}
+            onPlay={() => onPlay(day.dayIndex)}
             onHover={onHover}
-            onMobileSelect={() => onMobileSelect(track)}
+            onMobileSelect={() => onMobileSelect(day)}
             entranceDelay={index * 0.05}
           />
         ))}

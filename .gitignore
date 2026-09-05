@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# cloudflare
+/.open-next/
+/.wrangler/
+# local secrets for the Worker bindings — never commit (scripts/setup-email.sh
+# refuses to run if this line is missing)
+.dev.vars*

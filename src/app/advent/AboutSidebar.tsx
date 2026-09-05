@@ -1,19 +1,19 @@
 'use client';
 
 import { motion, AnimatePresence } from 'motion/react';
-import { Participant } from './types';
+import { Contributor } from './types';
 import { SpinningDisk } from './SpinningDisk';
 
 interface AboutSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  participants: Participant[];
+  contributors: Contributor[];
 }
 
 export function AboutSidebar({
   isOpen,
   onClose,
-  participants,
+  contributors,
 }: AboutSidebarProps) {
   return (
     <AnimatePresence>
@@ -58,20 +58,20 @@ export function AboutSidebar({
             <p className="text-zinc-600 leading-relaxed">
               A huge thanks to our old and new friends for their contributions,
               and for sharing their passion for music with us. <br />
-              {participants.map((participant, index) => (
-                <span key={participant.name}>
+              {contributors.map((contributor, index) => (
+                <span key={contributor.name}>
                   {index > 0 && ', '}
-                  {participant.link ? (
+                  {contributor.link ? (
                     <a
-                      href={participant.link}
+                      href={contributor.link}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-teal-600 hover:text-teal-700 hover:underline"
                     >
-                      {participant.name}
+                      {contributor.name}
                     </a>
                   ) : (
-                    <span>{participant.name}</span>
+                    <span>{contributor.name}</span>
                   )}
                 </span>
               ))}{' '}

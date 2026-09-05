@@ -9,14 +9,15 @@ import {
   useCallback,
 } from 'react';
 import { useLocalStorage } from 'react-use';
-import { TrackVariant } from './types';
+import { revealedDayCount } from './reveal';
+import { CalendarIdentity, TrackVariant } from './types';
 
 interface AdventDayContextValue {
   currentDayIndex: number;
   variant: TrackVariant;
   setVariant: (variant: TrackVariant) => void;
-  revealedIndices: number[];
-  addRevealedIndex: (index: number) => void;
+  openedIndices: number[];
+  addOpenedIndex: (index: number) => void;
   shuffleEnabled: boolean;
   setShuffleEnabled: (enabled: boolean) => void;
 }
@@ -25,33 +26,27 @@ const AdventDayContext = createContext<AdventDayContextValue | undefined>(
   undefined
 );
 
-const getCurrentDayIndex = (): number => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const day = now.getDate();
-  if (year < 2025 || (year === 2025 && month < 11)) {
-    return -1;
-  }
-
-  if (year > 2025 || (year === 2025 && month > 11)) {
-    return 24;
-  }
-
-  return Math.min(24, day - 1);
-};
-
 interface AdventDayProviderProps {
+  calendar: CalendarIdentity;
   children: ReactNode;
 }
 
-export function AdventDayProvider({ children }: AdventDayProviderProps) {
-  const [currentDayIndex] = useState<number>(() => getCurrentDayIndex());
+export function AdventDayProvider({
+  calendar,
+  children,
+}: AdventDayProviderProps) {
+  // The clock is read here, once, and never inside the reveal rules. Days are
+  // numbered 1-25 there and 0-based here, hence the -1: -1 means nothing has
+  // revealed yet.
+  const [currentDayIndex] = useState<number>(
+    () => revealedDayCount(calendar.year, new Date()) - 1
+  );
   const [variant, setVariant] = useState<TrackVariant>('light');
   const [shuffleEnabled, setShuffleEnabled] = useState(false);
-  const [revealedIndicesMap, setRevealedIndicesMap] = useLocalStorage<
+  // Keyed by Slug so that following two Calendars keeps two sets of progress.
+  const [openedIndicesMap, setOpenedIndicesMap] = useLocalStorage<
     Record<TrackVariant, number[]>
-  >('advent-revealed-map', {
+  >(`advent-opened:${calendar.slug}`, {
     light: [],
     heavy: [],
   });
@@ -59,27 +54,27 @@ export function AdventDayProvider({ children }: AdventDayProviderProps) {
   // Ensure map structure exists (for backward compatibility or first run)
   const normalizedMap = useMemo(() => {
     return {
-      light: Array.isArray(revealedIndicesMap?.light)
-        ? revealedIndicesMap.light
+      light: Array.isArray(openedIndicesMap?.light)
+        ? openedIndicesMap.light
         : [],
-      heavy: Array.isArray(revealedIndicesMap?.heavy)
-        ? revealedIndicesMap.heavy
+      heavy: Array.isArray(openedIndicesMap?.heavy)
+        ? openedIndicesMap.heavy
         : [],
     };
-  }, [revealedIndicesMap]);
+  }, [openedIndicesMap]);
 
-  const revealedIndices = normalizedMap[variant];
+  const openedIndices = normalizedMap[variant];
 
-  const addRevealedIndex = useCallback(
+  const addOpenedIndex = useCallback(
     (index: number) => {
-      if (!revealedIndices.includes(index)) {
-        setRevealedIndicesMap({
+      if (!openedIndices.includes(index)) {
+        setOpenedIndicesMap({
           ...normalizedMap,
-          [variant]: [...revealedIndices, index],
+          [variant]: [...openedIndices, index],
         });
       }
     },
-    [normalizedMap, revealedIndices, variant, setRevealedIndicesMap]
+    [normalizedMap, openedIndices, variant, setOpenedIndicesMap]
   );
 
   const value = useMemo(
@@ -87,16 +82,16 @@ export function AdventDayProvider({ children }: AdventDayProviderProps) {
       currentDayIndex,
       variant,
       setVariant,
-      revealedIndices,
-      addRevealedIndex,
+      openedIndices,
+      addOpenedIndex,
       shuffleEnabled,
       setShuffleEnabled,
     }),
     [
       currentDayIndex,
       variant,
-      revealedIndices,
-      addRevealedIndex,
+      openedIndices,
+      addOpenedIndex,
       shuffleEnabled,
     ]
   );

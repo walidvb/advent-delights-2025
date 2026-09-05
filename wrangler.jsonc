@@ -1,6 +1,24 @@
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "advent-diggers-25",
+  "main": ".open-next/worker.js",
   "compatibility_date": "2025-11-30",
-  "compatibility_flags": ["nodejs_compat"],
-  "pages_build_output_dir": ".vercel/output/static"
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "advent",
+      "database_id": "329ea00c-498c-4248-b2e0-b7a58a5e3522"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "advent-covers"
+    }
+  ]
 }

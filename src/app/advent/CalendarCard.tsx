@@ -3,16 +3,16 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { useId, useMemo, useState } from 'react';
 import { useAdventDay } from './AdventDayContext';
-import { Track } from './types';
+import { Day, TrackVariant } from './types';
 import { cn } from '@/lib/utils';
 
 interface CalendarCardProps {
-  track: Track;
+  day: Day;
   isRevealed: boolean;
   isPlaying: boolean;
   onReveal: () => void;
   onPlay: () => void;
-  onHover: (track: Track | null, event: React.MouseEvent | null) => void;
+  onHover: (day: Day | null, event: React.MouseEvent | null) => void;
   onMobileSelect: () => void;
   entranceDelay: number;
 }
@@ -29,8 +29,8 @@ function pseudoRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
-function generateMaskRect(day: number, variant: string): MaskRect {
-  let seed = day * 123.456;
+function generateMaskRect(dayNumber: number, variant: TrackVariant): MaskRect {
+  let seed = dayNumber * 123.456;
   const rand = () => {
     seed += 1;
     if (variant === 'light') {
@@ -57,7 +57,7 @@ function generateMaskRect(day: number, variant: string): MaskRect {
 }
 
 export function CalendarCard({
-  track,
+  day,
   isRevealed,
   isPlaying,
   onReveal,
@@ -67,15 +67,14 @@ export function CalendarCard({
   entranceDelay,
 }: CalendarCardProps) {
   const { currentDayIndex, variant } = useAdventDay();
-  const isInactive = track.dayIndex > currentDayIndex;
-  const isToday = track.dayIndex === currentDayIndex;
+  const isInactive = day.dayIndex > currentDayIndex;
+  const isToday = day.dayIndex === currentDayIndex;
   const isUnrevealed = !isInactive && !isRevealed;
   const [isHovered, setIsHovered] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
   const maskId = useId();
 
-  const coverImage =
-    variant === 'light' ? track.lightCoverImage : track.heavyCoverImage;
+  const coverImage = day.tracks[variant]?.coverImage;
 
   const hasCoverImage = !!coverImage;
 
@@ -107,12 +106,12 @@ export function CalendarCard({
       '#ef4444', // red
       '#f97316', // orange
     ];
-    return colors[track.dayIndex % colors.length];
-  }, [track.dayIndex]);
+    return colors[day.dayIndex % colors.length];
+  }, [day.dayIndex]);
 
   const maskRect = useMemo(
-    () => generateMaskRect(track.dayIndex + 1, variant),
-    [track.dayIndex, variant]
+    () => generateMaskRect(day.dayIndex + 1, variant),
+    [day.dayIndex, variant]
   );
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -135,7 +134,7 @@ export function CalendarCard({
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isRevealed) {
-      onHover(track, e);
+      onHover(day, e);
     }
   };
 
@@ -363,7 +362,7 @@ export function CalendarCard({
           } as React.CSSProperties
         }
       >
-        {track.dayIndex + 1}
+        {day.dayIndex + 1}
       </div>
 
       {!isInactive && isRevealed && (
