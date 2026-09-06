@@ -46,3 +46,7 @@ next-env.d.ts
 # local secrets for the Worker bindings — never commit (scripts/setup-email.sh
 # refuses to run if this line is missing)
 .dev.vars*
+
+# generated at build time from the deployed database; see
+# scripts/build-peek-pool.mjs
+/src/app/peek-pool.json

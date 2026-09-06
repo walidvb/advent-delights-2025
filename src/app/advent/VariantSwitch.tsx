@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { useAdventDay } from './AdventDayContext';
 import { cn } from '@/lib/utils';
 
-const DiscoBall = (props: any) => (
+export const DiscoBall = (props: any) => (
   <svg
     width="17"
     height="16"
@@ -76,7 +76,7 @@ const DiscoBall = (props: any) => (
   </svg>
 );
 
-const Peace = (props: any) => (
+export const Peace = (props: any) => (
   <svg
     width="17"
     height="16"
