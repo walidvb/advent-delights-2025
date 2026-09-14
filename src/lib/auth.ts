@@ -43,22 +43,23 @@ function sixDigitCode() {
 }
 
 /**
- * In local development `000000` always signs you in, so getting to the
- * dashboard doesn't mean fishing a code out of the server log every time.
- *
- * `process.env.NODE_ENV` is inlined at build time, so this branch is not
- * present in a production bundle at all: it cannot be switched back on by an
- * environment variable, a secret, or a misconfigured deploy. `npm run preview`
- * builds in production mode too, so the shortcut is `next dev` only.
+ * `000000` always signs you in, in every environment including the deployed
+ * one, so nobody testing has to fish a code out of a log or an inbox.
  *
  * It skips the code, not the flow — a pending, unexpired, unlocked request is
  * still required, and the account is still created and the session still
  * written exactly as they are for a real code.
+ *
+ * ponytail: this is a back door, and it is open on purpose while the platform
+ * is unlaunched and shared with nobody but us. It must be gone before anyone
+ * outside can reach the sign-in page: restore the
+ * `process.env.NODE_ENV !== 'production'` guard below and the shortcut is
+ * compiled out of the production bundle entirely.
  */
-const DEV_CODE = '000000';
+const MASTER_CODE = '000000';
 
-function devCodeAccepted(typed: string) {
-  return process.env.NODE_ENV !== 'production' && typed.trim() === DEV_CODE;
+function masterCodeAccepted(typed: string) {
+  return typed.trim() === MASTER_CODE;
 }
 
 function normaliseEmail(raw: string) {
@@ -134,7 +135,7 @@ export async function verifySignInCode(typed: string): Promise<'ok' | SignInFail
   if (!pending || pending.expires_at < Date.now()) return forget('expired');
   if (pending.attempts >= MAX_ATTEMPTS) return forget('locked');
 
-  if (!devCodeAccepted(typed) && (await sha256(`${id}:${typed.trim()}`)) !== pending.code_hash) {
+  if (!masterCodeAccepted(typed) && (await sha256(`${id}:${typed.trim()}`)) !== pending.code_hash) {
     await database.prepare('update sign_in_codes set attempts = attempts + 1 where id = ?1').bind(id).run();
     return pending.attempts + 1 >= MAX_ATTEMPTS ? forget('locked') : 'invalid';
   }
