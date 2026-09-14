@@ -13,7 +13,20 @@ import type { OnProgressProps } from 'react-player/base';
 // only. (v3 rendered a plain <video> and did not need this.)
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 import { useAdventDay } from './AdventDayContext';
+
 import { cn } from '@/lib/utils';
+
+// YouTube's default embed host sets its cookies on every viewer the moment a
+// Track starts. `youtube-nocookie.com` serves the same player without them,
+// and react-player spreads `embedOptions` over its own `host`, so this wins.
+// The player itself is already click-to-load: `url` is undefined until a Day
+// is playing, and v2 renders no player at all without one.
+// ponytail: the IFrame API *script* still comes from youtube.com — react-player
+// hardcodes that URL. Moving it needs the SDK hand-loaded before mount.
+const PLAYER_CONFIG = {
+  youtube: { embedOptions: { host: 'https://www.youtube-nocookie.com' } },
+};
+
 
 interface PlayerProps {
   day: Day | null;
@@ -158,6 +171,7 @@ export function Player({
         <ReactPlayer
           ref={playerRef}
           url={playableUrl}
+          config={PLAYER_CONFIG}
           playing={isPlaying}
           onProgress={handleProgress}
           onEnded={handleEnded}
