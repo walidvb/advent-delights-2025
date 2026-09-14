@@ -192,9 +192,9 @@ async function readVariants(calendarId: string): Promise<Variant[]> {
  */
 export async function getSubmitView(submitSlug: string): Promise<SubmitView | null> {
   const calendar = await (await db())
-    .prepare('select id, name, slug, year from calendars where submit_slug = ?1')
+    .prepare('select id, name, slug, starts_on from calendars where submit_slug = ?1')
     .bind(submitSlug)
-    .first<{ id: string; name: string; slug: string; year: number }>();
+    .first<{ id: string; name: string; slug: string; starts_on: string }>();
   if (!calendar) return null;
 
   // Day only — never credited_to, and nothing from `tracks`. This page has no
@@ -204,7 +204,7 @@ export async function getSubmitView(submitSlug: string): Promise<SubmitView | nu
     .bind(calendar.id)
     .all<{ day: number }>();
   const claimedDays = new Set(claimed.map((row) => row.day));
-  const claimable = claimableDays(calendar.year, new Date());
+  const claimable = claimableDays(calendar.starts_on, new Date());
 
   return {
     calendarName: calendar.name,
@@ -214,7 +214,7 @@ export async function getSubmitView(submitSlug: string): Promise<SubmitView | nu
     totalDays: DAYS_IN_CALENDAR,
     claimedCount: claimedDays.size,
     claimableCount: claimable.filter((day) => !claimedDays.has(day)).length,
-    revealedCount: revealedDayCount(calendar.year, new Date()),
+    revealedCount: revealedDayCount(calendar.starts_on, new Date()),
   };
 }
 
@@ -278,9 +278,9 @@ const DEAL_ATTEMPTS = 8;
 async function dealADay(
   database: D1Database,
   calendarId: string,
-  year: number,
+  startsOn: string,
 ): Promise<number | null> {
-  const claimable = claimableDays(year, new Date());
+  const claimable = claimableDays(startsOn, new Date());
   if (claimable.length === 0) return null;
 
   const { results } = await database
@@ -307,15 +307,15 @@ export async function createSubmission(
 ): Promise<ClaimResult> {
   const database = await db();
   const calendar = await database
-    .prepare('select id, slug, year from calendars where submit_slug = ?1')
+    .prepare('select id, slug, starts_on from calendars where submit_slug = ?1')
     .bind(submitSlug)
-    .first<{ id: string; slug: string; year: number }>();
+    .first<{ id: string; slug: string; starts_on: string }>();
   if (!calendar) return 'not-found';
 
   const variants = await readVariants(calendar.id);
 
   for (let attempt = 0; attempt < DEAL_ATTEMPTS; attempt++) {
-    const day = await dealADay(database, calendar.id, calendar.year);
+    const day = await dealADay(database, calendar.id, calendar.starts_on);
     if (day === null) return 'full';
 
     const id = crypto.randomUUID().replaceAll('-', '');
@@ -377,7 +377,7 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
   const submission = await database
     .prepare(
       `select s.id, s.calendar_id, s.day, s.credited_to, s.link, s.email,
-              c.name as calendar_name, c.slug as calendar_slug, c.year as calendar_year
+              c.name as calendar_name, c.slug as calendar_slug, c.starts_on as calendar_starts_on
          from submissions s join calendars c on c.id = s.calendar_id
         where s.edit_token = ?1`,
     )
@@ -391,7 +391,7 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
       email: string;
       calendar_name: string;
       calendar_slug: string;
-      calendar_year: number;
+      calendar_starts_on: string;
     }>();
   if (!submission) return null;
 
@@ -420,7 +420,7 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
     calendarName: submission.calendar_name,
     calendarSlug: submission.calendar_slug,
     variants,
-    archived: isArchived(submission.calendar_year, new Date()),
+    archived: isArchived(submission.calendar_starts_on, new Date()),
     draft: {
       creditedTo: submission.credited_to,
       link: submission.link,
@@ -465,14 +465,14 @@ export async function updateSubmission(
   const database = await db();
   const submission = await database
     .prepare(
-      `select s.id, c.slug as calendar_slug, c.year as calendar_year from submissions s
+      `select s.id, c.slug as calendar_slug, c.starts_on as calendar_starts_on from submissions s
          join calendars c on c.id = s.calendar_id
         where s.edit_token = ?1`,
     )
     .bind(editToken)
-    .first<{ id: string; calendar_slug: string; calendar_year: number }>();
+    .first<{ id: string; calendar_slug: string; calendar_starts_on: string }>();
   if (!submission) return null;
-  if (isArchived(submission.calendar_year, new Date())) return 'archived';
+  if (isArchived(submission.calendar_starts_on, new Date())) return 'archived';
 
   const variants = Object.keys(draft.tracks);
   await database.batch([

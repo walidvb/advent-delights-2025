@@ -39,7 +39,7 @@ export function AdventDayProvider({
   // numbered 1-25 there and 0-based here, hence the -1: -1 means nothing has
   // revealed yet.
   const [currentDayIndex] = useState<number>(
-    () => revealedDayCount(calendar.year, new Date()) - 1
+    () => revealedDayCount(calendar.startsOn, new Date()) - 1
   );
   const [variant, setVariant] = useState<TrackVariant>('light');
   const [shuffleEnabled, setShuffleEnabled] = useState(false);

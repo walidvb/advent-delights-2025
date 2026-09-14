@@ -64,7 +64,7 @@ export async function getClaims(
     .all<{ day: number; credited_to: string }>();
 
   const claimedBy = new Map(results.map((row) => [row.day, row.credited_to]));
-  const claimable = new Set(claimableDays(calendar.year, new Date()));
+  const claimable = new Set(claimableDays(calendar.starts_on, new Date()));
 
   return {
     claimedCount: claimedBy.size,

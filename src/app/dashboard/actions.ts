@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { defaultStartsOn } from '@/app/advent/reveal';
 import { getCurator } from '@/lib/auth';
 import { createCalendar, updateCalendar, type ChosenSlug } from '@/lib/calendars';
 import { deleteSubmission } from '@/lib/curation';
@@ -13,9 +14,23 @@ export async function createCalendarAction(formData: FormData) {
     curator.id,
     String(formData.get('name') ?? ''),
     String(formData.get('description') ?? ''),
+    startsOn(formData.get('starts_on')),
   );
 
   redirect(result === 'name' ? '/dashboard/new?error=name' : dashboardWithSlugNotice(result));
+}
+
+/**
+ * The start date off the form, or the 1st of December when it is missing or
+ * not a date — the field is a browser date input, so anything else got here by
+ * hand and is not worth a second error page.
+ *
+ * ponytail: the field is temporary, for testing a whole December inside a week.
+ * Drop it and this helper when the Calendar always starts on the 1st.
+ */
+function startsOn(raw: FormDataEntryValue | null) {
+  const value = String(raw ?? '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : defaultStartsOn(new Date().getFullYear());
 }
 
 /**

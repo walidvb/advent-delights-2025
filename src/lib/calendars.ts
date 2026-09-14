@@ -1,4 +1,5 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { startYear } from '@/app/advent/reveal';
 import { purgeCalendarPayload } from './calendar-payload';
 
 /**
@@ -17,6 +18,7 @@ export type Calendar = {
   name: string;
   description: string;
   year: number;
+  starts_on: string;
   slug: string;
   submit_slug: string;
   is_public: number;
@@ -138,8 +140,10 @@ async function freeSlug(base: string, exceptId: string | null): Promise<ChosenSl
 }
 
 /**
- * Creates a Calendar for the current year and returns the Slug it got, or
- * `'name'` if there was no name to derive an address from.
+ * Creates a Calendar starting on `startsOn` and returns the Slug it got, or
+ * `'name'` if there was no name to derive an address from. The year is taken
+ * from the start date rather than from the clock, so a Calendar created in
+ * November for next January is labelled with the year it actually runs in.
  *
  * The Submit slug is two musical words, generated here and never derived from
  * the name — it is the secret half of the pair, just a readable one now
@@ -149,6 +153,7 @@ export async function createCalendar(
   curatorId: string,
   rawName: string,
   rawDescription: string,
+  startsOn: string,
 ): Promise<ChosenSlug | 'name'> {
   const name = rawName.trim();
   if (!name) return 'name';
@@ -160,15 +165,16 @@ export async function createCalendar(
   await database.batch([
     database
       .prepare(
-        `insert into calendars (id, curator_id, name, description, year, slug, submit_slug, created_at)
-         values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
+        `insert into calendars (id, curator_id, name, description, year, starts_on, slug, submit_slug, created_at)
+         values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
       )
       .bind(
         id,
         curatorId,
         name,
         rawDescription.trim(),
-        new Date().getFullYear(),
+        startYear(startsOn),
+        startsOn,
         slug.slug,
         submitSlug,
         Date.now(),
@@ -186,7 +192,7 @@ export async function createCalendar(
 export async function listCalendars(curatorId: string): Promise<CalendarWithCount[]> {
   const { results } = await (await db())
     .prepare(
-      `select c.id, c.name, c.description, c.year, c.slug, c.submit_slug, c.is_public,
+      `select c.id, c.name, c.description, c.year, c.starts_on, c.slug, c.submit_slug, c.is_public,
               count(s.id) as claimedCount
          from calendars c
          left join submissions s on s.calendar_id = c.id
@@ -203,7 +209,7 @@ export async function listCalendars(curatorId: string): Promise<CalendarWithCoun
 export async function getOwnedCalendar(id: string, curatorId: string) {
   return await (await db())
     .prepare(
-      `select id, name, description, year, slug, submit_slug, is_public
+      `select id, name, description, year, starts_on, slug, submit_slug, is_public
          from calendars where id = ?1 and curator_id = ?2`,
     )
     .bind(id, curatorId)

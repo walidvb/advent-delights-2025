@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { defaultStartsOn } from '@/app/advent/reveal';
 import { getCurator } from '@/lib/auth';
 import { createCalendarAction } from '@/app/dashboard/actions';
 
@@ -56,6 +57,26 @@ export default async function NewCalendarPage({
           />
           <p className="-mt-3 text-xs text-zinc-400">
             Shown on the Submit page. One line is plenty.
+          </p>
+
+          {/*
+            ponytail: temporary, so a whole December can be walked through in a
+            week. Drop the field and the Calendar starts on the 1st on its own —
+            the action already falls back to that date.
+          */}
+          <label htmlFor="starts_on" className="text-sm">
+            First day reveals on
+          </label>
+          <input
+            id="starts_on"
+            name="starts_on"
+            type="date"
+            defaultValue={defaultStartsOn(new Date().getFullYear())}
+            className={field}
+          />
+          <p className="-mt-3 text-xs text-zinc-400">
+            Day 1 opens on this date, then one Day a day. Testing only — this
+            will always be the 1st of December.
           </p>
 
           <div className="flex items-center gap-3 pt-2">

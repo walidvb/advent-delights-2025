@@ -1,13 +1,13 @@
 export type TrackVariant = 'light' | 'heavy';
 
 /**
- * Which Calendar the viewer is looking at: its Slug, and the year it belongs
- * to. The Slug keys the browser's record of which Days have been opened; the
- * year decides which Days have revealed.
+ * Which Calendar the viewer is looking at: its Slug, and the date it starts on.
+ * The Slug keys the browser's record of which Days have been opened; the start
+ * date decides which Days have revealed.
  */
 export interface CalendarIdentity {
   slug: string;
-  year: number;
+  startsOn: string;
 }
 
 /**

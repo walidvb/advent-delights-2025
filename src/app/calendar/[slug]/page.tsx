@@ -21,7 +21,7 @@ export default async function CalendarPage({
   if (!calendar) notFound();
 
   return (
-    <AdventDayProvider calendar={{ slug: calendar.slug, year: calendar.year }}>
+    <AdventDayProvider calendar={{ slug: calendar.slug, startsOn: calendar.startsOn }}>
       <AdventCalendar days={calendar.days} contributors={calendar.contributors} />
     </AdventDayProvider>
   );

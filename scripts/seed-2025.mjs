@@ -258,9 +258,9 @@ const statements = [
      values (${quote(randomId())}, ${quote(curatorEmail)}, ${Date.now()})
      on conflict (email) do nothing;`,
 
-  `insert into calendars (id, curator_id, name, description, year, slug, submit_slug, is_public, created_at)
+  `insert into calendars (id, curator_id, name, description, year, starts_on, slug, submit_slug, is_public, created_at)
      select ${quote(randomId())}, id, ${quote(CALENDAR.name)}, ${quote(CALENDAR.description)}, ${CALENDAR.year},
-            ${quote(CALENDAR.slug)}, ${quote(randomId())}, 0, ${Date.now()}
+            ${quote(`${CALENDAR.year}-12-01`)}, ${quote(CALENDAR.slug)}, ${quote(randomId())}, 0, ${Date.now()}
        from curators where email = ${quote(curatorEmail)}
         and not exists (select 1 from calendars where slug = ${quote(CALENDAR.slug)});`,
 
