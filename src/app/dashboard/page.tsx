@@ -7,15 +7,11 @@ import { Occupancy } from '@/app/submit/Occupancy';
 
 const pill = 'rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-zinc-50 hover:opacity-90';
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ taken?: string }>;
-}) {
+export default async function DashboardPage() {
   const curator = await getCurator();
   if (!curator) redirect('/sign-in');
 
-  const [{ taken }, calendars] = await Promise.all([searchParams, listCalendars(curator.id)]);
+  const calendars = await listCalendars(curator.id);
 
   return (
     <main className="min-h-dvh bg-[url('/light.webp')] bg-cover bg-fixed bg-center">
@@ -43,14 +39,6 @@ export default async function DashboardPage({
             </Link>
           )}
         </div>
-
-        {taken && (
-          <p role="status" className="rounded-md border border-border bg-white/90 px-3 py-2 text-sm">
-            That address was already taken, so this Calendar is at{' '}
-            <span className="font-mono">{taken}</span>. Change it in Settings if you&apos;d rather
-            have something else.
-          </p>
-        )}
 
         {calendars.length === 0 ? (
           <div className="flex flex-col items-center gap-5 rounded-2xl border border-white/70 bg-white/90 p-10 text-center shadow-[0_12px_40px_rgba(0,0,0,.10)]">

@@ -138,8 +138,8 @@ async function freeSlug(base: string, exceptId: string | null): Promise<ChosenSl
 }
 
 /**
- * Creates a Calendar for the current year and returns the Slug it got, or
- * `'name'` if there was no name to derive an address from.
+ * Creates a Calendar for the current year and returns its id and the Slug it
+ * got, or `'name'` if there was no name to derive an address from.
  *
  * The Submit slug is two musical words, generated here and never derived from
  * the name — it is the secret half of the pair, just a readable one now
@@ -149,7 +149,7 @@ export async function createCalendar(
   curatorId: string,
   rawName: string,
   rawDescription: string,
-): Promise<ChosenSlug | 'name'> {
+): Promise<(ChosenSlug & { id: string }) | 'name'> {
   const name = rawName.trim();
   if (!name) return 'name';
 
@@ -180,7 +180,7 @@ export async function createCalendar(
     ),
   ]);
 
-  return slug;
+  return { ...slug, id };
 }
 
 export async function listCalendars(curatorId: string): Promise<CalendarWithCount[]> {
