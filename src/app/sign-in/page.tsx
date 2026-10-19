@@ -5,6 +5,7 @@ import { CodeInput } from './CodeInput';
 
 const MESSAGES: Record<string, string> = {
   email: "That doesn't look like an email address. Check it and try again.",
+  send: "We couldn't send a code to that address. Check it, or try again in a minute.",
   invalid: "That code isn't right. Check it and try again.",
   expired: 'That code has expired. Ask for a new one.',
   locked: 'Too many wrong tries, so that code no longer works. Ask for a new one.',
