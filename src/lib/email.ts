@@ -4,6 +4,7 @@ declare global {
   interface CloudflareEnv {
     /** Set by scripts/setup-email.sh. Absent in local dev, and that is fine. */
     RESEND_API_KEY?: string;
+    /** Declared in wrangler.jsonc `vars`; read from .dev.vars in local dev. */
     EMAIL_FROM?: string;
   }
 }

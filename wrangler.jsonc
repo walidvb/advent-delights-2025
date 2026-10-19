@@ -4,6 +4,13 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2025-11-30",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Not a secret, so it lives here rather than in `wrangler secret put`: the
+  // From address is public on every message anyway, and keeping it in the
+  // config means a deploy can never silently fall back to onboarding@resend.dev,
+  // which only ever delivers to the Resend account owner.
+  "vars": {
+    "EMAIL_FROM": "Advent Delights <hello@adventdelights.club>"
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"

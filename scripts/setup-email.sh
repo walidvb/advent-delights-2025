@@ -372,10 +372,11 @@ done
 
 # ── 6 ─────────────────────────────────────────────────────────────────────
 stage "Deployed Worker secrets"
-say "The same two values have to reach the deployed Worker. Local .dev.vars is"
-say "not uploaded — Cloudflare keeps its own copy."
+say "The key has to reach the deployed Worker too. Local .dev.vars is not"
+say "uploaded — Cloudflare keeps its own copy. EMAIL_FROM is not a secret and"
+say "lives in wrangler.jsonc, so it ships with the deploy and is not set here."
 printf '\n'
-for NAME in RESEND_API_KEY EMAIL_FROM; do
+for NAME in RESEND_API_KEY; do
   VALUE="${!NAME}"
   if worker_has_secret "$NAME"; then
     note "$NAME already exists on the Worker."
