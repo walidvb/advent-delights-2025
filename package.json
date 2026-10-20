@@ -12,7 +12,7 @@
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
-    "@cucu/media": "github:walidvb/diggers-utils#3e59220ea23e4cae6c971d481d2e12ab2379d197",
+    "@cucu/media": "github:walidvb/diggers-utils#b50c0ad0a490725e0400a80e03483313bf6868e7",
     "@opennextjs/cloudflare": "^1.20.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
