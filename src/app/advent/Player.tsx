@@ -1,18 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { motion } from 'motion/react';
+import { MediaEngine, type MediaEngineHandle, type Progress } from '@cucu/media/react';
 import { Day, TrackVariant } from './types';
-import dynamic from 'next/dynamic';
-import type ReactPlayerType from 'react-player';
-import type { OnProgressProps } from 'react-player/base';
-
-// react-player v2 renders nothing on the server and mounts its player on the
-// client, so server-rendering it fails hydration. It is loaded client-side
-// only. (v3 rendered a plain <video> and did not need this.)
-const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 import { useAdventDay } from './AdventDayContext';
+import { refreshStreamAction } from './actions';
 import { cn } from '@/lib/utils';
 
 interface PlayerProps {
@@ -23,10 +17,10 @@ interface PlayerProps {
   onPrevious: () => void;
 }
 
+/** The Day and Variant actually playing, which a Variant switch mid-track doesn't change. */
 interface LockedPlayback {
   dayIndex: number;
   variant: TrackVariant;
-  url: string;
 }
 
 export function Player({
@@ -36,8 +30,8 @@ export function Player({
   onNext,
   onPrevious,
 }: PlayerProps) {
-  const { variant, shuffleEnabled, setShuffleEnabled } = useAdventDay();
-  const playerRef = useRef<ReactPlayerType>(null);
+  const { slug, variant, shuffleEnabled, setShuffleEnabled } = useAdventDay();
+  const engineRef = useRef<MediaEngineHandle>(null);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [seeking, setSeeking] = useState(false);
@@ -46,50 +40,18 @@ export function Player({
   );
   const [isBuffering, setIsBuffering] = useState(false);
 
-  const currentVariantUrl = day?.tracks[variant]?.url;
+  const hasCurrentVariant = !!day?.tracks[variant];
 
-  useEffect(() => {
-    if (day && currentVariantUrl) {
-      const shouldLock =
-        !lockedPlayback || lockedPlayback.dayIndex !== day.dayIndex;
-      if (shouldLock) {
-        setLockedPlayback({
-          dayIndex: day.dayIndex,
-          variant,
-          url: currentVariantUrl,
-        });
-      }
+  // A new Day starts on whichever Variant is showing; while paused, the Track
+  // follows the switch. While playing, it doesn't: the switch changes the
+  // Calendar, not the song. Adjusted while rendering, not in an effect, so the
+  // wrong Track never gets a frame.
+  if (day && hasCurrentVariant) {
+    const newDay = !lockedPlayback || lockedPlayback.dayIndex !== day.dayIndex;
+    if (newDay || (!isPlaying && lockedPlayback.variant !== variant)) {
+      setLockedPlayback({ dayIndex: day.dayIndex, variant });
     }
-  }, [day, currentVariantUrl, variant, lockedPlayback]);
-
-  useEffect(() => {
-    if (!isPlaying && lockedPlayback && currentVariantUrl) {
-      if (
-        lockedPlayback.variant !== variant ||
-        lockedPlayback.url !== currentVariantUrl
-      ) {
-        setLockedPlayback({
-          dayIndex: lockedPlayback.dayIndex,
-          variant,
-          url: currentVariantUrl,
-        });
-      }
-    }
-  }, [isPlaying, variant, currentVariantUrl, lockedPlayback]);
-
-  const trackUrl =
-    isPlaying && lockedPlayback && day?.dayIndex === lockedPlayback.dayIndex
-      ? lockedPlayback.url
-      : currentVariantUrl;
-
-  // react-player v2 reads `list=`/`channel=` in a YouTube URL as a request to
-  // load that playlist instead of the linked video. Plenty of submitted Track
-  // URLs carry one (`&list=RD…`, `&list=LL`), so drop it: a Track is one piece
-  // of music, never a playlist.
-  const playableUrl = trackUrl?.replace(
-    /([?&])(?:list|channel)=[^&]*/g,
-    '$1'
-  );
+  }
 
   const displayVariant =
     isPlaying && lockedPlayback && day?.dayIndex === lockedPlayback.dayIndex
@@ -99,45 +61,43 @@ export function Player({
   const nowPlaying = day?.tracks[displayVariant];
   const { coverImage, buyLink, artistName, trackName } = nowPlaying ?? {};
 
-  const handleEnded = useCallback(() => {
-    onNext();
-  }, [onNext]);
+  // Every Day has failed in a row: stop rather than skip round the Calendar forever.
+  const failures = useRef(0);
+  const handleError = () => {
+    failures.current += 1;
+    if (failures.current >= 25) {
+      failures.current = 0;
+      if (isPlaying) onPlayPause();
+    } else {
+      onNext();
+    }
+  };
 
-  const handleBuffer = useCallback(() => {
-    setIsBuffering(true);
-  }, []);
+  const handleProgress = (state: Progress) => {
+    failures.current = 0;
+    if (seeking) return;
+    setProgress(state.played);
+    setDuration(state.duration);
+  };
 
-  const handleBufferEnd = useCallback(() => {
-    setIsBuffering(false);
-  }, []);
-
-  // Duration is read off the player on every progress tick rather than taken
-  // from `onDuration`: v2 fires that at most once per url, and on SoundCloud
-  // the widget's PLAY event beats its own duration lookup, so the callback
-  // reports the *previous* Track's length and never corrects itself.
-  const handleProgress = useCallback(
-    (state: OnProgressProps) => {
-      if (seeking) return;
-      setProgress(state.played);
-      setDuration(playerRef.current?.getDuration() ?? 0);
-    },
-    [seeking]
-  );
+  // A stored Bandcamp stream lasts weeks, not forever: ask for a fresh one.
+  const refreshStream = day
+    ? () => refreshStreamAction(slug, day.dayIndex + 1, displayVariant)
+    : undefined;
 
   const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSeeking(true);
     setProgress(parseFloat(e.target.value) / 100);
   };
 
-  const handleSeekMouseDown = () => {
-    setSeeking(true);
-  };
-
-  const handleSeekMouseUp = (e: React.MouseEvent<HTMLInputElement>) => {
+  // Pointer events, so a scrub on a phone lands too.
+  const commitSeek = (
+    e: React.PointerEvent<HTMLInputElement> | React.KeyboardEvent<HTMLInputElement>
+  ) => {
+    // e.g. the keyup of the Tab that focused the scrubber
+    if (!seeking) return;
     setSeeking(false);
-    playerRef.current?.seekTo(
-      parseFloat((e.target as HTMLInputElement).value) / 100,
-      'fraction'
-    );
+    engineRef.current?.seekTo(parseFloat(e.currentTarget.value) / 100);
   };
 
   const formatTime = (seconds: number) => {
@@ -153,20 +113,16 @@ export function Player({
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       className="fixed bottom-0 left-0 right-0 z-20 border-t border-zinc-200 bg-white/95 backdrop-blur-sm"
     >
-      <div className="hidden">
-        {' '}
-        <ReactPlayer
-          ref={playerRef}
-          url={playableUrl}
-          playing={isPlaying}
-          onProgress={handleProgress}
-          onEnded={handleEnded}
-          onBuffer={handleBuffer}
-          onBufferEnd={handleBufferEnd}
-          width="1000"
-          height="1000"
-        />
-      </div>
+      <MediaEngine
+        ref={engineRef}
+        media={nowPlaying?.media ?? null}
+        playing={isPlaying}
+        onProgress={handleProgress}
+        onEnded={onNext}
+        onBuffering={setIsBuffering}
+        onError={handleError}
+        refreshStream={refreshStream}
+      />
       <div className="mx-auto flex justify-between flex-wrap max-w-4xl items-center gap-4 px-6 py-3">
         {day ? (
           <>
@@ -268,8 +224,10 @@ export function Player({
                   max={100}
                   value={progress * 100}
                   onChange={handleSeekChange}
-                  onMouseDown={handleSeekMouseDown}
-                  onMouseUp={handleSeekMouseUp}
+                  onPointerDown={() => setSeeking(true)}
+                  onPointerUp={commitSeek}
+                  onPointerCancel={() => setSeeking(false)}
+                  onKeyUp={commitSeek}
                   className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-zinc-200 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-zinc-900"
                 />
                 <span className="text-xs text-zinc-500">

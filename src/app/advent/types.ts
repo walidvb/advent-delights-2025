@@ -1,3 +1,5 @@
+import type { MediaRef } from '@cucu/media/core';
+
 export type TrackVariant = 'light' | 'heavy';
 
 /**
@@ -22,6 +24,8 @@ export interface Track {
   description: string;
   buyLink: string;
   coverImage: string;
+  /** What the player needs to play it: for Bandcamp, the stream rather than the page. */
+  media: MediaRef;
 }
 
 /**

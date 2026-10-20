@@ -5,7 +5,7 @@ import { headers } from 'next/headers';
 import { calendarPath } from '@/lib/calendars';
 import { COVER_TYPES, coverProblem } from '@/lib/covers';
 import { sendEmail } from '@/lib/email';
-import { lookupTrackMetadata, type TrackMetadata } from '@/lib/track-metadata';
+import { lookupTrack, resolveTracks, type TrackLookup } from '@/lib/media';
 import {
   createSubmission,
   draftProblem,
@@ -37,7 +37,8 @@ export async function submitAction(
   if (!view) return { attempt: previous.attempt + 1, error: 'This submission link is not valid.' };
 
   const draft = readDraft(formData, view.variants);
-  const problem = draftProblem(draft, view.variants);
+  const problem =
+    draftProblem(draft, view.variants) ?? (await resolveTracks(draft.tracks, view.variants));
   if (problem) return { attempt: previous.attempt + 1, error: problem };
 
   const result = await createSubmission(submitSlug, draft);
@@ -126,7 +127,8 @@ export async function saveSubmissionAction(
   if (!existing) return { attempt, error: 'This edit link is not valid.' };
 
   const draft = readDraft(formData, existing.variants);
-  const problem = draftProblem(draft, existing.variants);
+  const problem =
+    draftProblem(draft, existing.variants) ?? (await resolveTracks(draft.tracks, existing.variants));
   if (problem) return { attempt, error: problem, draft };
 
   const result = await updateSubmission(editToken, draft);
@@ -138,14 +140,16 @@ export async function saveSubmissionAction(
 }
 
 /**
- * A guess at a Track's title, artist and artwork from its URL, for prefilling
- * the form. Never throws and never refuses: `null` means "nothing to suggest",
- * which is what an unrecognised source, an unreachable one and a private link
- * all look like from here. The Contributor types the fields themselves in
- * exactly the way they always could, and nothing on screen changes.
+ * A guess at a Track's title, artist and artwork from its URL — and for a
+ * Bandcamp release, its tracklist — for prefilling the form. Never throws and
+ * never refuses: `null` means "nothing to suggest", which is what an
+ * unrecognised source, an unreachable one and a private link all look like from
+ * here. The Contributor types the fields themselves in exactly the way they
+ * always could. A `problem` is said out loud only for a link that can't work
+ * in the Calendar at all.
  */
-export async function lookupTrackAction(url: string): Promise<TrackMetadata | null> {
-  return lookupTrackMetadata(url);
+export async function lookupTrackAction(url: string): Promise<TrackLookup | null> {
+  return lookupTrack(url);
 }
 
 /**

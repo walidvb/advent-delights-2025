@@ -9,8 +9,9 @@ import { cn } from '@/lib/utils';
 import pool from './peek-pool.json';
 
 // react-player v2 renders nothing on the server and mounts its player on the
-// client, so server-rendering it fails hydration. Same treatment as the
-// Calendar's own Player.
+// client, so server-rendering it fails hydration. Raw react-player rather than
+// the Calendar's `MediaEngine`, which can't mute — and the pool holds no
+// Bandcamp Tracks, so there is never a stream to look after.
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
 /** One Day of some past Calendar, as `scripts/build-peek-pool.mjs` bakes it. */

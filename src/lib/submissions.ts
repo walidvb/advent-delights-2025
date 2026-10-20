@@ -77,6 +77,17 @@ export type TrackDraft = {
    * is only the note of where it went.
    */
   coverKey: string;
+  /**
+   * Bandcamp only: which track of the release this is, empty otherwise. The
+   * form carries it like any other answer; the server checks it against the
+   * release before storing it.
+   */
+  providerTrackId: string;
+  /**
+   * Bandcamp only: the stream read off the release when the Track was saved.
+   * Never read from the form — `resolveTracks` fills it in on the server.
+   */
+  streamUrl: string;
 };
 
 async function db() {
@@ -132,6 +143,8 @@ export function readDraft(formData: FormData, variants: Variant[]): SubmissionDr
           // prefix was the alternative and was rejected: it would silently wipe
           // the seeded `covers/…` keys the moment one of those is ever edited.
           coverKey: text(formData.get(`${variant}.cover_key`), SHORT),
+          providerTrackId: text(formData.get(`${variant}.provider_track_id`), SHORT),
+          streamUrl: '',
         },
       ]),
     ),
@@ -241,12 +254,15 @@ function trackUpsert(
   // `coverImage` decides which one is shown.
   return database
     .prepare(
-      `insert into tracks (submission_id, variant, url, title, artist, description, buy_link, cover_url, cover_key)
-       values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+      `insert into tracks (submission_id, variant, url, title, artist, description, buy_link, cover_url, cover_key,
+                           provider_track_id, stream_url, stream_refreshed_at)
+       values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, null)
        on conflict (submission_id, variant) do update set
          url = excluded.url, title = excluded.title, artist = excluded.artist,
          description = excluded.description, buy_link = excluded.buy_link,
-         cover_url = excluded.cover_url, cover_key = excluded.cover_key`,
+         cover_url = excluded.cover_url, cover_key = excluded.cover_key,
+         provider_track_id = excluded.provider_track_id, stream_url = excluded.stream_url,
+         stream_refreshed_at = null`,
     )
     .bind(
       submissionId,
@@ -258,6 +274,8 @@ function trackUpsert(
       track.buyLink,
       track.coverUrl || null,
       track.coverKey || null,
+      track.providerTrackId || null,
+      track.streamUrl || null,
     );
 }
 
@@ -354,6 +372,8 @@ const emptyTrack = (): TrackDraft => ({
   buyLink: '',
   coverUrl: '',
   coverKey: '',
+  providerTrackId: '',
+  streamUrl: '',
 });
 
 export type OwnSubmission = {
@@ -399,7 +419,7 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
     readVariants(submission.calendar_id),
     database
       .prepare(
-        `select variant, url, title, artist, description, buy_link, cover_url, cover_key
+        `select variant, url, title, artist, description, buy_link, cover_url, cover_key, provider_track_id
            from tracks where submission_id = ?1`,
       )
       .bind(submission.id)
@@ -412,6 +432,7 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
         buy_link: string;
         cover_url: string | null;
         cover_key: string | null;
+        provider_track_id: string | null;
       }>(),
   ]);
 
@@ -439,6 +460,9 @@ export async function getSubmission(editToken: string): Promise<OwnSubmission | 
                   buyLink: track.buy_link,
                   coverUrl: track.cover_url ?? '',
                   coverKey: track.cover_key ?? '',
+                  providerTrackId: track.provider_track_id ?? '',
+                  // The edit form never needs it, and a save reads it afresh.
+                  streamUrl: '',
                 }
               : emptyTrack(),
           ];
