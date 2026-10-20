@@ -3,6 +3,8 @@ import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  // @cucu/media ships TypeScript source, not a build.
+  transpilePackages: ['@cucu/media'],
   images: {
     unoptimized: true,
     remotePatterns: [

@@ -1,4 +1,5 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { detectProvider, normalizeUrl, type MediaRef } from '@cucu/media/core';
 import { DAYS_IN_CALENDAR } from '@/app/advent/reveal';
 import { coverPath } from './covers';
 import type { Contributor, Day, TrackVariant } from '@/app/advent/types';
@@ -38,6 +39,22 @@ function coverImage(row: TrackRow, day: number) {
   return row.cover_url || placeholderCover(day);
 }
 
+/**
+ * How the player plays a Track. The link is canonicalised here as well as on
+ * the way in, so Tracks stored before that still play the video and not the
+ * playlist it was linked from. A link from a source we don't recognise is
+ * handed to the player as it is, which plays more than we detect.
+ */
+function media(row: TrackRow): MediaRef {
+  const url = row.url ?? '';
+  return {
+    provider: detectProvider(url) ?? 'file',
+    url: normalizeUrl(url) ?? url,
+    providerTrackId: row.provider_track_id,
+    streamUrl: row.stream_url,
+  };
+}
+
 type TrackRow = {
   slug: string;
   year: number;
@@ -52,6 +69,8 @@ type TrackRow = {
   buy_link: string | null;
   cover_key: string | null;
   cover_url: string | null;
+  provider_track_id: string | null;
+  stream_url: string | null;
 };
 
 /**
@@ -64,7 +83,7 @@ async function readCalendar(slug: string): Promise<CalendarPayload | null> {
   const { results } = await env.DB.prepare(
     `select c.slug, c.year, s.day, s.credited_to, s.link,
             t.variant, t.url, t.title, t.artist, t.description, t.buy_link,
-            t.cover_key, t.cover_url
+            t.cover_key, t.cover_url, t.provider_track_id, t.stream_url
        from calendars c
        left join submissions s on s.calendar_id = c.id
        left join tracks t on t.submission_id = s.id
@@ -100,6 +119,7 @@ async function readCalendar(slug: string): Promise<CalendarPayload | null> {
         description: row.description ?? '',
         buyLink: row.buy_link ?? '',
         coverImage: coverImage(row, row.day),
+        media: media(row),
       };
     }
     if (day.creditedTo && !seen.has(day.creditedTo)) {

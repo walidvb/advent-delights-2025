@@ -35,6 +35,9 @@ const local = process.argv.includes('--local');
  *   advertised, and the landing page is advertising.
  * - `cover_key is not null` — a Track with no cover falls back to a stock
  *   photograph, which reads as noise in a grid of album art.
+ *
+ * Bandcamp Tracks sit out too: they play a signed stream that expires within
+ * weeks, and this pool is baked once a year.
  */
 const QUERY = `
   select c.slug, s.day, s.credited_to, t.variant, t.url, t.cover_key
@@ -45,6 +48,7 @@ const QUERY = `
      and c.is_public = 1
      and t.cover_key is not null
      and t.url <> ''
+     and t.url not like '%bandcamp.com%'
    order by c.slug, s.day, t.variant
 `.trim();
 

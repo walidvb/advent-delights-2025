@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { lookupTrackAction, uploadCoverAction } from './actions';
 import { COVER_TYPES, coverPath, coverProblem, resizeCover } from '@/lib/covers';
+import type { ReleaseTrack } from '@/lib/media';
 import type { SubmissionDraft, TrackDraft, Variant } from '@/lib/submissions';
-import type { TrackMetadata } from '@/lib/track-metadata';
 
 /**
  * The fields of a Submission: who to credit, and one Track per Variant.
@@ -116,6 +116,7 @@ export function SubmissionFields({
 
 /** The four things a lookup can offer to fill in, and a Contributor can overwrite. */
 type Prefillable = { url: string; title: string; artist: string; coverUrl: string };
+type Suggestion = Omit<Prefillable, 'url'>;
 
 /**
  * One Track. Paste a link and the title, artist and artwork try to fill
@@ -150,11 +151,26 @@ export function TrackFields({
    * suggestion has not been touched, so a new link may replace it; anything
    * else is the Contributor's own words and is left alone.
    */
-  const suggestion = useRef<TrackMetadata | null>(null);
+  const suggestion = useRef<Suggestion | null>(null);
   // The URL this form was rendered with is already accounted for — on the edit
   // form it has been looked up once, months ago, and answered.
   const settled = useRef(values.url.trim());
   const [looking, setLooking] = useState(false);
+  const [problem, setProblem] = useState('');
+  /** Bandcamp only: the release's tracks, and which one this Track is. */
+  const [release, setRelease] = useState<ReleaseTrack[]>([]);
+  const [trackId, setTrackId] = useState(track?.providerTrackId ?? '');
+
+  /** Fill what is empty or still the last suggestion; leave the Contributor's own words alone. */
+  function suggest(found: Suggestion) {
+    const previous = suggestion.current;
+    suggestion.current = found;
+    setValues((current) => {
+      const fill = (key: keyof Suggestion) =>
+        current[key] && current[key] !== previous?.[key] ? current[key] : found[key];
+      return { ...current, title: fill('title'), artist: fill('artist'), coverUrl: fill('coverUrl') };
+    });
+  }
 
   useEffect(() => {
     const url = values.url.trim();
@@ -167,25 +183,36 @@ export function TrackFields({
       const found = await lookupTrackAction(url).catch(() => null);
       if (!live) return;
       setLooking(false);
-      if (!found) return;
+      setProblem(found && 'problem' in found ? found.problem : '');
+      const tracks = found && 'tracks' in found ? (found.tracks ?? []) : [];
+      setRelease(tracks);
+      if (!found || 'problem' in found) return setTrackId('');
 
-      const previous = suggestion.current;
-      suggestion.current = found;
-      setValues((current) => {
-        const fill = (key: keyof TrackMetadata) =>
-          current[key] && current[key] !== previous?.[key] ? current[key] : found[key];
-        return { ...current, title: fill('title'), artist: fill('artist'), coverUrl: fill('coverUrl') };
-      });
+      // Keep the stored track if this is still its release; otherwise whichever
+      // one Bandcamp's own page starts on.
+      const stored = track?.providerTrackId;
+      const id = tracks.some((t) => t.id === stored && t.playable) ? stored! : (found.trackId ?? '');
+      setTrackId(id);
+      const picked = tracks.find((t) => t.id === id);
+      suggest({ ...found, title: picked?.title ?? found.title, artist: picked?.artist ?? found.artist });
     }, SETTLE_MS);
 
     return () => {
       live = false;
       clearTimeout(timer);
     };
-  }, [values.url]);
+  }, [values.url, track?.providerTrackId]);
 
   const set = (key: keyof Prefillable) => (event: { target: { value: string } }) =>
     setValues((current) => ({ ...current, [key]: event.target.value }));
+
+  function chooseTrack(id: string) {
+    setTrackId(id);
+    const picked = release.find((t) => t.id === id);
+    if (picked && suggestion.current) {
+      suggest({ ...suggestion.current, title: picked.title, artist: picked.artist });
+    }
+  }
 
   /**
    * The uploaded cover: the key of an object already in the bucket, never the
@@ -248,14 +275,43 @@ export function TrackFields({
         required
         value={values.url}
         onChange={set('url')}
-        placeholder="youtube.com/watch?v=… or soundcloud.com/…"
+        placeholder="bandcamp.com/track/…, soundcloud.com/… or youtube.com/watch?v=…"
         className={field}
       />
-      <p className="-mt-1 text-xs text-muted-foreground" role="status">
+      <p
+        className={`-mt-1 text-xs ${problem ? 'text-destructive' : 'text-muted-foreground'}`}
+        role={problem ? 'alert' : 'status'}
+      >
         {looking
           ? 'Looking up the track…'
-          : 'Paste a YouTube or SoundCloud link and the next three fill themselves in. Correct anything they get wrong.'}
+          : problem ||
+            'Paste a Bandcamp, SoundCloud or YouTube link and the next three fill themselves in. Correct anything they get wrong.'}
       </p>
+
+      {release.length > 1 ? (
+        <>
+          <label htmlFor={`${variant}.provider_track_id`} className="text-sm">
+            Which track on the release
+          </label>
+          <select
+            id={`${variant}.provider_track_id`}
+            name={`${variant}.provider_track_id`}
+            value={trackId}
+            onChange={(event) => chooseTrack(event.target.value)}
+            className={field}
+          >
+            {release.map((t, i) => (
+              // A track you have to buy to hear can't be played in the Calendar.
+              <option key={t.id} value={t.id} disabled={!t.playable}>
+                {i + 1}. {t.title}
+                {t.playable ? '' : ' (not streamable)'}
+              </option>
+            ))}
+          </select>
+        </>
+      ) : (
+        <input type="hidden" name={`${variant}.provider_track_id`} value={trackId} />
+      )}
 
       <label htmlFor={`${variant}.title`} className="text-sm">
         Track name

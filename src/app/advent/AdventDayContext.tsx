@@ -13,6 +13,7 @@ import { revealedDayCount } from './reveal';
 import { CalendarIdentity, TrackVariant } from './types';
 
 interface AdventDayContextValue {
+  slug: string;
   currentDayIndex: number;
   variant: TrackVariant;
   setVariant: (variant: TrackVariant) => void;
@@ -79,6 +80,7 @@ export function AdventDayProvider({
 
   const value = useMemo(
     () => ({
+      slug: calendar.slug,
       currentDayIndex,
       variant,
       setVariant,
@@ -88,6 +90,7 @@ export function AdventDayProvider({
       setShuffleEnabled,
     }),
     [
+      calendar.slug,
       currentDayIndex,
       variant,
       openedIndices,
