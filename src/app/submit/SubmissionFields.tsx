@@ -114,7 +114,10 @@ export function SubmissionFields({
   );
 }
 
-/** The four things a lookup can offer to fill in, and a Contributor can overwrite. */
+/**
+ * The four things a lookup can offer to fill in. A Contributor can overwrite
+ * all but the artwork, which only ever comes from the lookup.
+ */
 type Prefillable = { url: string; title: string; artist: string; coverUrl: string };
 type Suggestion = Omit<Prefillable, 'url'>;
 
@@ -168,7 +171,8 @@ export function TrackFields({
     setValues((current) => {
       const fill = (key: keyof Suggestion) =>
         current[key] && current[key] !== previous?.[key] ? current[key] : found[key];
-      return { ...current, title: fill('title'), artist: fill('artist'), coverUrl: fill('coverUrl') };
+      // The artwork isn't the Contributor's to edit, so it always follows the link.
+      return { ...current, title: fill('title'), artist: fill('artist'), coverUrl: found.coverUrl };
     });
   }
 
@@ -285,7 +289,7 @@ export function TrackFields({
         {looking
           ? 'Looking up the track…'
           : problem ||
-            'Paste a Bandcamp, SoundCloud or YouTube link and the next three fill themselves in. Correct anything they get wrong.'}
+            'Paste a Bandcamp, SoundCloud or YouTube link and the name, artist and artwork fill themselves in. Correct the name or artist if they get it wrong.'}
       </p>
 
       {release.length > 1 ? (
@@ -339,30 +343,20 @@ export function TrackFields({
         className={field}
       />
 
-      <label htmlFor={`${variant}.cover_url`} className="text-sm">
-        Cover image {optional}
-      </label>
-      <div className="flex items-start gap-3">
-        <input
-          id={`${variant}.cover_url`}
-          name={`${variant}.cover_url`}
-          value={values.coverUrl}
-          onChange={set('coverUrl')}
-          placeholder="filled in from the link, when we recognise it"
-          className={field}
+      <span className="text-sm">Cover image {optional}</span>
+      {/* Filled from the link only; there is nothing here to type into. */}
+      <input type="hidden" name={`${variant}.cover_url`} value={values.coverUrl} />
+      {values.coverUrl && (
+        // eslint-disable-next-line @next/next/no-img-element -- somebody else's host, and only a preview.
+        <img
+          src={values.coverUrl}
+          alt=""
+          // Dimmed while an upload is in charge, because that is what shows.
+          className={`h-16 w-16 shrink-0 rounded-md border border-border object-cover ${
+            cover.key ? 'opacity-30' : ''
+          }`}
         />
-        {values.coverUrl && (
-          // eslint-disable-next-line @next/next/no-img-element -- somebody else's host, and only a preview.
-          <img
-            src={values.coverUrl}
-            alt=""
-            // Dimmed while an upload is in charge, because that is what shows.
-            className={`h-16 w-16 shrink-0 rounded-md border border-border object-cover ${
-              cover.key ? 'opacity-30' : ''
-            }`}
-          />
-        )}
-      </div>
+      )}
 
       <div className="flex items-start gap-3">
         <div className="flex min-w-0 flex-col gap-2">
