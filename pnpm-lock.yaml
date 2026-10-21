@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@cucu/media':
-        specifier: github:walidvb/diggers-utils#b50c0ad0a490725e0400a80e03483313bf6868e7
-        version: https://codeload.github.com/walidvb/diggers-utils/tar.gz/b50c0ad0a490725e0400a80e03483313bf6868e7(react-dom@19.2.0(react@19.2.0))(react-player@2.16.1(react@19.2.0))(react@19.2.0)
+        specifier: github:walidvb/diggers-utils#86741af8866d6df1aafaa003e0b2df544e79a6c0
+        version: https://codeload.github.com/walidvb/diggers-utils/tar.gz/86741af8866d6df1aafaa003e0b2df544e79a6c0(react-dom@19.2.0(react@19.2.0))(react-player@2.16.1(react@19.2.0))(react@19.2.0)
       '@opennextjs/cloudflare':
         specifier: ^1.20.5
         version: 1.20.6(next@16.3.4(@babel/core@7.28.5)(@types/node@20.19.25)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(wrangler@4.129.0)
@@ -447,8 +447,8 @@ packages:
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
     engines: {node: '>=12'}
 
-  '@cucu/media@https://codeload.github.com/walidvb/diggers-utils/tar.gz/b50c0ad0a490725e0400a80e03483313bf6868e7':
-    resolution: {tarball: https://codeload.github.com/walidvb/diggers-utils/tar.gz/b50c0ad0a490725e0400a80e03483313bf6868e7}
+  '@cucu/media@https://codeload.github.com/walidvb/diggers-utils/tar.gz/86741af8866d6df1aafaa003e0b2df544e79a6c0':
+    resolution: {tarball: https://codeload.github.com/walidvb/diggers-utils/tar.gz/86741af8866d6df1aafaa003e0b2df544e79a6c0}
     version: 0.1.1
     peerDependencies:
       react: ^18 || ^19
@@ -4522,7 +4522,7 @@ snapshots:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
 
-  '@cucu/media@https://codeload.github.com/walidvb/diggers-utils/tar.gz/b50c0ad0a490725e0400a80e03483313bf6868e7(react-dom@19.2.0(react@19.2.0))(react-player@2.16.1(react@19.2.0))(react@19.2.0)':
+  '@cucu/media@https://codeload.github.com/walidvb/diggers-utils/tar.gz/86741af8866d6df1aafaa003e0b2df544e79a6c0(react-dom@19.2.0(react@19.2.0))(react-player@2.16.1(react@19.2.0))(react@19.2.0)':
     dependencies:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
