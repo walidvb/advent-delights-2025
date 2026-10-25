@@ -4,6 +4,7 @@ import { CalendarCard } from './CalendarCard';
 import { Day } from './types';
 
 interface CalendarGridProps {
+  year: number;
   days: Day[];
   revealedIndices: Set<number>;
   playingIndex: number | null;
@@ -13,7 +14,10 @@ interface CalendarGridProps {
   onMobileSelect: (day: Day) => void;
 }
 
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
 export function CalendarGrid({
+  year,
   days,
   revealedIndices,
   playingIndex,
@@ -22,9 +26,22 @@ export function CalendarGrid({
   onHover,
   onMobileSelect,
 }: CalendarGridProps) {
+  // Weeks run Monday to Sunday, so Day 1 sits under its December 1st weekday.
+  const offset = (new Date(year, 11, 1).getDay() + 6) % 7;
   return (
-    <div className="overflow-auto px-6 py-4">
-      <div className="grid grid-cols-2 md:grid-cols-5 xl:grid-cols-7 gap-4">
+    <div className="overflow-auto px-2 sm:px-6 py-4">
+      <div className="grid grid-cols-7 gap-1 sm:gap-4">
+        {WEEKDAYS.map((name) => (
+          <div
+            key={name}
+            className="text-center text-xs font-medium uppercase text-white/80"
+          >
+            {name}
+          </div>
+        ))}
+        {offset > 0 && (
+          <div aria-hidden style={{ gridColumn: `span ${offset}` }} />
+        )}
         {days.map((day, index) => (
           <CalendarCard
             key={day.dayIndex}

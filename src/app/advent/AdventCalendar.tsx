@@ -11,11 +11,12 @@ import { Day, Contributor } from './types';
 import { useAdventDay } from './AdventDayContext';
 
 interface AdventCalendarProps {
+  year: number;
   days: Day[];
   contributors: Contributor[];
 }
 
-export function AdventCalendar({ days, contributors }: AdventCalendarProps) {
+export function AdventCalendar({ year, days, contributors }: AdventCalendarProps) {
   const {
     openedIndices,
     addOpenedIndex,
@@ -173,6 +174,7 @@ export function AdventCalendar({ days, contributors }: AdventCalendarProps) {
       </AnimatePresence>
       <Header onAboutClick={() => setIsAboutOpen(true)} />
       <CalendarGrid
+        year={year}
         days={days}
         revealedIndices={openedSet}
         playingIndex={playingIndex}
