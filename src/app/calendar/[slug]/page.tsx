@@ -22,7 +22,7 @@ export default async function CalendarPage({
 
   return (
     <AdventDayProvider calendar={{ slug: calendar.slug, year: calendar.year }}>
-      <AdventCalendar days={calendar.days} contributors={calendar.contributors} />
+      <AdventCalendar year={calendar.year} days={calendar.days} contributors={calendar.contributors} />
     </AdventDayProvider>
   );
 }
