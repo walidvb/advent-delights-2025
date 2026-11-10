@@ -87,6 +87,19 @@ export async function deleteCalendar(id: string): Promise<void> {
 }
 
 /**
+ * Drops a Calendar's cached payload so the next visit reads the database
+ * again. For when the database was changed by hand and nothing purged it.
+ */
+export async function refreshCalendar(id: string): Promise<void> {
+  await requireAdmin();
+  const calendar = await (await db())
+    .prepare('select slug from calendars where id = ?1')
+    .bind(id)
+    .first<{ slug: string }>();
+  if (calendar) await purgeCalendarPayload(calendar.slug);
+}
+
+/**
  * Removes the Submission on one Day of a Calendar that is not yet an Archive.
  * Archived Days are left alone — the Calendar is finished.
  */

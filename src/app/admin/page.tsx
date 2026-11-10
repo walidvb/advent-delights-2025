@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { isArchived } from '@/app/advent/reveal';
 import { listAllCalendars, requireAdmin } from '@/lib/admin';
 import { calendarPath } from '@/lib/calendars';
-import { deleteCalendarAction, deleteSubmissionAction } from './actions';
+import { deleteCalendarAction, deleteSubmissionAction, refreshCalendarAction } from './actions';
 import { ConfirmDelete } from './ConfirmDelete';
 
 export default async function AdminPage() {
@@ -46,13 +46,24 @@ export default async function AdminPage() {
                       {archived && ' · Archived'}
                     </span>
                   </div>
-                  <ConfirmDelete
-                    action={deleteCalendarAction.bind(null, calendar.id)}
-                    label="Delete"
-                    title={`Delete “${calendar.name}”?`}
-                    message={`This removes the Calendar and all ${calendar.claims.length} of its Submissions. Its links stop working. No undo.`}
-                    className="shrink-0 rounded-full border border-red-200 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
-                  />
+                  <div className="flex shrink-0 gap-2">
+                    <form action={refreshCalendarAction.bind(null, calendar.id)}>
+                      <button
+                        type="submit"
+                        title="Clear the cached copy so the page reads the database again"
+                        className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                      >
+                        Refresh
+                      </button>
+                    </form>
+                    <ConfirmDelete
+                      action={deleteCalendarAction.bind(null, calendar.id)}
+                      label="Delete"
+                      title={`Delete “${calendar.name}”?`}
+                      message={`This removes the Calendar and all ${calendar.claims.length} of its Submissions. Its links stop working. No undo.`}
+                      className="rounded-full border border-red-200 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+                    />
+                  </div>
                 </div>
 
                 {!archived && calendar.claims.length > 0 && (
