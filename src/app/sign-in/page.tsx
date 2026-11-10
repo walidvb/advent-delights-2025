@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurator, pendingCodeEmail } from '@/lib/auth';
 import { requestCodeAction, useAnotherEmailAction, verifyCodeAction } from './actions';
@@ -27,9 +28,9 @@ export default async function SignInPage({
 
   return (
     <main className="relative flex min-h-dvh items-center justify-center bg-[url('/light.webp')] bg-cover bg-fixed bg-center px-4 py-10">
-      <span className="absolute left-6 top-6 font-title text-3xl italic font-light">
+      <Link href="/" className="absolute left-6 top-6 font-title text-3xl italic font-light">
         Advent Delights
-      </span>
+      </Link>
 
       <div className="w-full max-w-sm rounded-2xl border border-zinc-200/70 bg-white p-8 shadow-[0_1px_2px_rgba(0,0,0,.04),0_12px_40px_rgba(0,0,0,.10)]">
         <div className="flex flex-col gap-6">

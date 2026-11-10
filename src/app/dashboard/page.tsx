@@ -20,7 +20,9 @@ export default async function DashboardPage({
   return (
     <main className="min-h-dvh bg-[url('/light.webp')] bg-cover bg-fixed bg-center">
       <header className="flex items-center justify-between gap-4 border-b border-black/5 bg-white/40 px-6 py-4 backdrop-blur sm:px-10">
-        <span className="font-title text-3xl italic font-light">Advent Delights</span>
+        <Link href="/" className="font-title text-3xl italic font-light">
+          Advent Delights
+        </Link>
         <div className="flex items-center gap-4">
           <span className="hidden text-sm text-zinc-600 sm:inline">{curator.email}</span>
           <form action={signOutAction}>

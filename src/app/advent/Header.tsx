@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { VariantSwitch } from './VariantSwitch';
 import { useAdventDay } from './AdventDayContext';
 
@@ -54,7 +55,7 @@ export function Header({ onAboutClick }: HeaderProps) {
           textShadow: '0px .5px 0px currentColor, 0.5px 0px 0px currentColor',
         }}
       >
-        Advent Delights
+        <Link href="/">Advent Delights</Link>
       </h1>
 
       <VariantSwitch />
