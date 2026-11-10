@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import type { CuratedDay } from '@/lib/curation';
+import { decemberOffset } from '@/app/advent/CalendarGrid';
 
 /**
  * The Curator's 25-Day grid. Claim state and credited names only — nothing
@@ -14,8 +15,17 @@ import type { CuratedDay } from '@/lib/curation';
  * and the switch is purely a display choice: the names are already in this
  * component's props either way, never fetched on demand.
  */
-export function ClaimGrid({ calendarId, days }: { calendarId: string; days: CuratedDay[] }) {
+export function ClaimGrid({
+  calendarId,
+  year,
+  days,
+}: {
+  calendarId: string;
+  year: number;
+  days: CuratedDay[];
+}) {
   const [showNames, setShowNames] = useState(false);
+  const offset = decemberOffset(year);
 
   return (
     <div className="flex flex-col gap-3">
@@ -40,7 +50,8 @@ export function ClaimGrid({ calendarId, days }: { calendarId: string; days: Cura
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
+        {offset > 0 && <div aria-hidden style={{ gridColumn: `span ${offset}` }} />}
         {days.map((day) => {
           const claimed = Boolean(day.claimedBy);
           const label = claimed ? (showNames ? day.claimedBy : 'claimed') : day.claimable ? 'free' : 'unclaimed';
@@ -52,12 +63,14 @@ export function ClaimGrid({ calendarId, days }: { calendarId: string; days: Cura
 
           const cell = (
             <div
-              className={`relative flex aspect-square flex-col items-center justify-center rounded-lg p-1 text-center ${tone}`}
+              className={`relative flex aspect-square flex-col items-center justify-center rounded-lg px-0 pt-2.5 text-center sm:p-1 ${tone}`}
             >
               <span className="absolute left-1.5 top-1 font-mono text-[10px] text-zinc-400">
                 {day.day}
               </span>
-              <span className="line-clamp-2 px-1 text-[11px] font-medium leading-tight">{label}</span>
+              <span className="line-clamp-2 text-[9px] font-medium leading-tight [overflow-wrap:anywhere] sm:px-1 sm:text-[11px]">
+                {label}
+              </span>
             </div>
           );
 

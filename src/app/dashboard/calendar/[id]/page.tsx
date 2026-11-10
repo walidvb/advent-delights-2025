@@ -50,7 +50,7 @@ export default async function CalendarSettingsPage({ params }: { params: Promise
             </p>
           </div>
 
-          <ClaimGrid calendarId={calendar.id} days={claims.days} />
+          <ClaimGrid calendarId={calendar.id} year={calendar.year} days={claims.days} />
         </div>
 
         <div className="flex flex-col gap-5">
