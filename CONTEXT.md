@@ -16,12 +16,19 @@ again next December means creating a new Calendar, not reopening this one.
 
 The person who created a Calendar. There is exactly one per Calendar.
 
-Deliberately not called *admin*. "Admin" is reserved for platform staff, who do
-not exist yet — using it for the person who made a calendar would make that
-future distinction impossible to name.
+Deliberately not called *admin*. "Admin" is reserved for platform staff — using
+it for the person who made a calendar would make that distinction impossible to
+name.
 
 A Curator can see *who* has claimed each Day, but not *what* they submitted. The
 surprise belongs to the Curator too.
+
+### Admin
+
+Platform staff. An Admin signs in like a Curator but sees every Calendar on the
+platform, and may delete a Calendar outright or delete the Submission on any Day
+of a Calendar that is not yet an Archive. Like a Curator, an Admin sees who
+claimed a Day, never what they submitted.
 
 ### Day
 
@@ -99,4 +106,4 @@ social convention the platform presents, not a rule it enforces.
 ### Archive
 
 What a Calendar becomes after the 25th: permanently readable, every Day open, no
-further Submissions. Archived Calendars are never deleted.
+further Submissions. Archived Calendars are never deleted, except by an Admin.

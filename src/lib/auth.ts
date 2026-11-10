@@ -15,7 +15,7 @@ const SESSION_COOKIE = 'curator_session';
 
 export type SignInFailure = 'email' | 'invalid' | 'expired' | 'locked';
 
-export type Curator = { id: string; email: string };
+export type Curator = { id: string; email: string; isAdmin: boolean };
 
 async function db() {
   const { env } = await getCloudflareContext({ async: true });
@@ -194,14 +194,14 @@ export async function getCurator(): Promise<Curator | null> {
 
   const row = await (await db())
     .prepare(
-      `select curators.id as id, curators.email as email
+      `select curators.id as id, curators.email as email, curators.admin as admin
          from sessions join curators on curators.id = sessions.curator_id
         where sessions.id = ?1 and sessions.expires_at > ?2`,
     )
     .bind(await sha256(token), Date.now())
-    .first<Curator>();
+    .first<{ id: string; email: string; admin: number }>();
 
-  return row ?? null;
+  return row ? { id: row.id, email: row.email, isAdmin: row.admin === 1 } : null;
 }
 
 export async function signOut() {
