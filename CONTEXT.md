@@ -90,7 +90,8 @@ what you send round beforehand.
 
 ### Public
 
-A Calendar the Curator has marked as listable. Public is about *discovery*, not
+A Calendar that is listable. New Calendars start Public; the Curator can unmark
+it. Public is about *discovery*, not
 access: a Calendar that is not public is simply not advertised, and its Slug
 still works for anyone holding it.
 

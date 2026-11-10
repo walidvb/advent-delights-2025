@@ -160,8 +160,9 @@ export async function createCalendar(
   await database.batch([
     database
       .prepare(
-        `insert into calendars (id, curator_id, name, description, year, slug, submit_slug, created_at)
-         values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
+        // Public by default; the Curator can make it private in Settings.
+        `insert into calendars (id, curator_id, name, description, year, slug, submit_slug, is_public, created_at)
+         values (?1, ?2, ?3, ?4, ?5, ?6, ?7, 1, ?8)`,
       )
       .bind(
         id,
