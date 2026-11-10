@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { AdventCalendar } from '@/app/advent/AdventCalendar';
 import { AdventDayProvider } from '@/app/advent/AdventDayContext';
@@ -11,6 +12,19 @@ import { getCalendarPayload } from '@/lib/calendar-payload';
  * A Slug no Calendar has is a 404, not an error — the Slug is guessable by
  * design, so being asked for one that does not exist is ordinary.
  */
+/**
+ * A Calendar that is not Public stays reachable at its Slug but is kept out of
+ * search results: Public is about discovery, and a search index is discovery.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const calendar = await getCalendarPayload((await params).slug);
+  return calendar && !calendar.isPublic ? { robots: { index: false, follow: false } } : {};
+}
+
 export default async function CalendarPage({
   params,
 }: {

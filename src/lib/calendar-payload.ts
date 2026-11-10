@@ -18,6 +18,8 @@ import type { Contributor, Day, TrackVariant } from '@/app/advent/types';
 export type CalendarPayload = {
   slug: string;
   year: number;
+  /** Not Public: the page still loads for anyone holding the Slug, but is not indexed. */
+  isPublic: boolean;
   days: Day[];
   contributors: Contributor[];
 };
@@ -58,6 +60,7 @@ function media(row: TrackRow): MediaRef {
 type TrackRow = {
   slug: string;
   year: number;
+  is_public: number;
   day: number | null;
   credited_to: string | null;
   link: string | null;
@@ -81,7 +84,7 @@ type TrackRow = {
 async function readCalendar(slug: string): Promise<CalendarPayload | null> {
   const { env } = await getCloudflareContext({ async: true });
   const { results } = await env.DB.prepare(
-    `select c.slug, c.year, s.day, s.credited_to, s.link,
+    `select c.slug, c.year, c.is_public, s.day, s.credited_to, s.link,
             t.variant, t.url, t.title, t.artist, t.description, t.buy_link,
             t.cover_key, t.cover_url, t.provider_track_id, t.stream_url
        from calendars c
@@ -128,7 +131,13 @@ async function readCalendar(slug: string): Promise<CalendarPayload | null> {
     }
   }
 
-  return { slug: results[0].slug, year: results[0].year, days, contributors };
+  return {
+    slug: results[0].slug,
+    year: results[0].year,
+    isPublic: results[0].is_public === 1,
+    days,
+    contributors,
+  };
 }
 
 /**
@@ -142,9 +151,13 @@ function edgeCache(): Cache | null {
   return (caches as unknown as { default: Cache }).default;
 }
 
-/** The cached payload's address. Not a real URL; nothing ever fetches it. */
+/**
+ * The cached payload's address. Not a real URL; nothing ever fetches it. The
+ * version segment changes whenever the payload's shape does, so a payload
+ * cached under the old shape is never read back as the new one.
+ */
 const cacheKey = (slug: string) =>
-  new Request(`https://calendar-payload.invalid/${encodeURIComponent(slug)}`);
+  new Request(`https://calendar-payload.invalid/v2/${encodeURIComponent(slug)}`);
 
 /**
  * The Calendar at `slug`, from the cache when it is there and from the database
