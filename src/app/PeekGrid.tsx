@@ -2,6 +2,7 @@
 
 import { useCallback, useState, useSyncExternalStore } from 'react';
 import dynamic from 'next/dynamic';
+import { AnimatePresence, motion } from 'motion/react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { DiscoBall, Peace } from './advent/VariantSwitch';
 import type { TrackVariant } from './advent/types';
@@ -22,14 +23,6 @@ type PeekDay = {
 };
 
 const CELLS = 25;
-
-/**
- * The last three Days are sealed, always, whatever today's date is. The grid is
- * a stage set rather than a calendar: "three still to come" is the only framing
- * that tells the story in July as well as in December, and a visitor's own
- * Calendar is where the real dates live.
- */
-const SEALED_FROM = 22;
 
 /** Twenty-five Days drawn at random, cycling if the pool is smaller than that. */
 function deal(days: PeekDay[]): PeekDay[] {
@@ -83,8 +76,8 @@ export function PeekGrid({
   const [muted, setMuted] = useState(true);
 
   // Playback runs on past the end of a track by itself, so the grid keeps going
-  // while the visitor reads the rest of the page. Sealed Days sit out.
-  const next = useCallback(() => setPlaying((n) => (n + 1) % SEALED_FROM), []);
+  // while the visitor reads the rest of the page.
+  const next = useCallback(() => setPlaying((n) => (n + 1) % CELLS), []);
 
   const track = days[playing]?.[variant];
 
@@ -100,9 +93,11 @@ export function PeekGrid({
           n={i + 1}
           day={days[i]}
           variant={variant}
-          sealed={i >= SEALED_FROM}
           playing={i === playing}
-          onPlay={() => setPlaying(i)}
+          onPlay={() => {
+            setPlaying(i);
+            setMuted(false);
+          }}
         />
       ))}
 
@@ -127,7 +122,8 @@ export function PeekGrid({
       {/*
         Muted, because no browser starts audible playback without a gesture: an
         unmuted autoplay would leave the first card claiming to play while
-        nothing happened. The sound control is the gesture that turns it on.
+        nothing happened. Picking a cover, or the sound control, is the gesture
+        that turns it on.
       */}
       {track && (
         <div className="hidden">
@@ -142,23 +138,21 @@ function Cell({
   n,
   day,
   variant,
-  sealed,
   playing,
   onPlay,
 }: {
   n: number;
   day: PeekDay | undefined;
   variant: TrackVariant;
-  sealed: boolean;
   playing: boolean;
   onPlay: () => void;
 }) {
   return (
     <div
-      onClick={sealed ? undefined : onPlay}
+      onClick={onPlay}
       className={cn(
         'relative aspect-square transition-transform duration-200',
-        sealed ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-[1.06]',
+        'cursor-pointer hover:scale-[1.06]',
         playing && 'z-[3]',
       )}
     >
@@ -173,9 +167,6 @@ function Cell({
               variant === 'light' ? 'outline-zinc-900' : 'outline-zinc-100',
             ),
         )}
-        style={
-          sealed ? { background: 'linear-gradient(150deg,#a1a1aa,#71717a 55%,#52525b)' } : undefined
-        }
       >
         {/*
           The art is inset past the edges so the blur has something to smear
@@ -183,22 +174,30 @@ function Cell({
           Only the playing cover is sharp; hovering lifts the card without
           giving its artwork away.
         */}
-        {!sealed && day && (
-          <span
-            className="absolute -inset-2 bg-zinc-300 bg-cover bg-center bg-no-repeat transition-[filter] duration-[250ms]"
-            style={{
-              backgroundImage: `url(${day[variant].cover})`,
-              filter: playing ? 'none' : 'blur(3px) saturate(.7)',
-            }}
-          />
+        {/*
+          Switching Variant cross-fades each cover in turn, so the swap ripples
+          across the grid in reading order rather than snapping all at once.
+        */}
+        {day && (
+          <AnimatePresence initial={false}>
+            <motion.span
+              key={variant}
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3, delay: (n - 1) * 0.025 }}
+              className="absolute -inset-2 bg-zinc-300 bg-cover bg-center bg-no-repeat transition-[filter] duration-[250ms]"
+              style={{
+                backgroundImage: `url(${day[variant].cover})`,
+                filter: playing ? 'none' : 'blur(3px) saturate(.7)',
+              }}
+            />
+          </AnimatePresence>
         )}
       </span>
 
       <span
-        className={cn(
-          'absolute right-[3px] bottom-[1px] z-[1] text-[11px] font-bold text-zinc-100 [text-shadow:1px_1px_0_rgb(0,0,0)] lg:right-[5px] lg:bottom-[2px] lg:text-[15px]',
-          sealed && 'opacity-75',
-        )}
+        className="absolute right-[3px] bottom-[1px] z-[1] text-[11px] font-bold text-zinc-100 [text-shadow:1px_1px_0_rgb(0,0,0)] lg:right-[5px] lg:bottom-[2px] lg:text-[15px]"
       >
         {n}
       </span>
@@ -208,7 +207,7 @@ function Cell({
           <span className="absolute bottom-[calc(100%+4px)] left-1/2 z-[4] size-[7px] origin-[50%_120%] animate-tip-pop rounded-[1px] bg-zinc-900 lg:bottom-[calc(100%+6.5px)] lg:size-[9px]" />
           <span className="absolute bottom-[calc(100%+7px)] left-1/2 z-[4] flex origin-[50%_120%] animate-tip-pop flex-col items-center gap-px rounded-lg bg-zinc-900 px-[9px] py-[5px] whitespace-nowrap text-zinc-50 shadow-[0_10px_26px_rgba(0,0,0,.38)] lg:bottom-[calc(100%+10px)] lg:px-[13px] lg:py-[7px]">
             <span className="font-mono text-[7px] tracking-[.14em] text-white/55 uppercase lg:text-[8.5px]">
-              now playing
+              selected by
             </span>
             <span className="text-[11px] leading-[1.15] font-medium lg:text-sm">{day.by}</span>
           </span>
@@ -238,7 +237,7 @@ function VariantPill({
 
   const half = (which: TrackVariant) =>
     cn(
-      'flex cursor-pointer items-center justify-center rounded-full border-0 px-2 py-[3px] transition-colors lg:px-[26px] lg:py-[7px]',
+      'relative z-10 flex cursor-pointer items-center justify-center rounded-full border-0 px-2 py-[3px] transition-colors lg:px-[26px] lg:py-[7px]',
       which === variant
         ? which === 'light'
           ? 'text-zinc-900'
@@ -250,15 +249,24 @@ function VariantPill({
 
   return (
     <div
-      className="flex items-center gap-[2px] rounded-full p-px shadow-[0_2px_10px_rgba(0,0,0,.22)] lg:gap-1"
+      className="relative flex items-center gap-[2px] rounded-full p-px shadow-[0_2px_10px_rgba(0,0,0,.22)] lg:gap-1"
       style={backdrop(variant === 'light' ? '/dark.webp' : '/light.webp')}
     >
+      <motion.span
+        layout
+        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+        className="absolute inset-y-px rounded-full"
+        style={{
+          ...backdrop(variant === 'light' ? '/light.webp' : '/dark.webp'),
+          left: variant === 'light' ? 1 : '50%',
+          right: variant === 'heavy' ? 1 : '50%',
+        }}
+      />
       <button
         type="button"
         onClick={() => onChange('light')}
         aria-label="soothe your mind"
         className={half('light')}
-        style={variant === 'light' ? backdrop('/light.webp') : undefined}
       >
         <Peace className="size-[14px] lg:size-[30px]" />
       </button>
@@ -267,7 +275,6 @@ function VariantPill({
         onClick={() => onChange('heavy')}
         aria-label="get schwifty"
         className={half('heavy')}
-        style={variant === 'heavy' ? backdrop('/dark.webp') : undefined}
       >
         <DiscoBall className="size-[14px] lg:size-[30px]" />
       </button>

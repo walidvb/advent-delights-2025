@@ -25,14 +25,13 @@ const OUT = path.join(ROOT, 'src/app/peek-pool.json');
 const local = process.argv.includes('--local');
 
 /**
- * Which Calendars the landing may show. Three conditions, each load-bearing:
+ * Which Calendars the landing may show: every past one, Public or not. Two
+ * conditions, each load-bearing:
  *
  * - `year < currentYear` — a Calendar from this year may still be mid-December
  *   with Days nobody has opened, and the front page is the last place a spoiler
  *   should surface. Evaluated at build time rather than written in, so it rolls
  *   forward on its own each January.
- * - `is_public` — Public means listable. A Calendar that is not public is not
- *   advertised, and the landing page is advertising.
  * - `cover_key is not null` — a Track with no cover falls back to a stock
  *   photograph, which reads as noise in a grid of album art.
  *
@@ -45,7 +44,6 @@ const QUERY = `
     join submissions s on s.calendar_id = c.id
     join tracks t on t.submission_id = s.id
    where c.year < ${new Date().getFullYear()}
-     and c.is_public = 1
      and t.cover_key is not null
      and t.url <> ''
      and t.url not like '%bandcamp.com%'
@@ -53,7 +51,9 @@ const QUERY = `
 `.trim();
 
 /** Mirrors `coverPath` in src/lib/covers.ts, which is TypeScript. */
-const coverPath = (key) => `/cover/${key.split('/').map(encodeURIComponent).join('/')}`;
+const encodeSegment = (segment) =>
+  encodeURIComponent(segment).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+const coverPath = (key) => `/cover/${key.split('/').map(encodeSegment).join('/')}`;
 
 function readRows() {
   const out = execFileSync(

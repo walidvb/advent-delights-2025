@@ -96,7 +96,11 @@ export async function resizeCover(file: File): Promise<Blob> {
  * bucket's own public development URL, which is rate-limited and documented as
  * being for development only. The key becomes the path after `/cover/`, a
  * segment at a time, so a seeded filename carrying a `+` or a space still
- * addresses its object.
+ * addresses its object. Parentheses and quotes are encoded too, which
+ * `encodeURIComponent` leaves alone: the path goes into unquoted CSS `url()`,
+ * where a bare `(` ends the value and the cover silently never loads.
  */
-export const coverPath = (key: string) =>
-  `/cover/${key.split('/').map(encodeURIComponent).join('/')}`;
+const encodeSegment = (segment: string) =>
+  encodeURIComponent(segment).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+
+export const coverPath = (key: string) => `/cover/${key.split('/').map(encodeSegment).join('/')}`;
