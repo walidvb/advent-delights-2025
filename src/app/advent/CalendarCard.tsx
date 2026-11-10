@@ -5,6 +5,7 @@ import { useId, useMemo, useState } from 'react';
 import { useAdventDay } from './AdventDayContext';
 import { Day, TrackVariant } from './types';
 import { cn } from '@/lib/utils';
+import { swapPop } from './swap-pop';
 
 interface CalendarCardProps {
   day: Day;
@@ -15,6 +16,8 @@ interface CalendarCardProps {
   onHover: (day: Day | null, event: React.MouseEvent | null) => void;
   onMobileSelect: () => void;
   entranceDelay: number;
+  /** This card's place in the corner-to-corner sweep a Variant swap makes. */
+  swapStep: number;
 }
 
 interface MaskRect {
@@ -65,6 +68,7 @@ export function CalendarCard({
   onHover,
   onMobileSelect,
   entranceDelay,
+  swapStep,
 }: CalendarCardProps) {
   const { currentDayIndex, variant } = useAdventDay();
   const isInactive = day.dayIndex > currentDayIndex;
@@ -72,7 +76,8 @@ export function CalendarCard({
   const isUnrevealed = !isInactive && !isRevealed;
   const [isHovered, setIsHovered] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
-  const maskId = useId();
+  // Per Variant: during a swap both covers are mounted, each with its own mask.
+  const maskId = `${useId()}-${variant}`;
 
   const coverImage = day.tracks[variant]?.coverImage;
 
@@ -246,87 +251,92 @@ export function CalendarCard({
       whileHover={!isInactive ? { scale: 1.02 } : undefined}
       whileTap={!isInactive ? { scale: 0.98 } : undefined}
     >
-      {isUnrevealed && (
-        <div
-          className="absolute inset-0 overflow-hidden"
-          style={
-            hasCoverImage
-              ? {
-                  backgroundImage: `url(${coverImage})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  filter: 'blur(40px)',
-                  transform: 'scale(1.1)',
-                }
-              : {
-                  backgroundColor: fallbackColor,
-                  opacity: 0.3,
-                }
-          }
-        />
-      )}
-
-      {isInactive && (
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.25)',
-            backdropFilter: 'blur(20px)',
-          }}
-        />
-      )}
-
-      <motion.div
-        className="absolute inset-0"
-        animate={{
-          scale: isRevealing || isRevealed ? 1 : 1.1,
-        }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-      >
-        <svg
-          className="absolute inset-0 w-full h-full"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="xMidYMid slice"
-        >
-          <defs>
-            <mask id={maskId}>
-              <rect x="0" y="0" width="100" height="100" fill="black" />
-              <motion.rect
-                key={variant}
-                fill="white"
-                initial="entrance"
-                animate={maskState}
-                variants={maskVariants}
-                transition={
-                  maskState === 'initial'
-                    ? entranceTransition
-                    : revealTransition
-                }
-              />
-            </mask>
-          </defs>
-          {hasCoverImage ? (
-            <image
-              href={coverImage}
-              x="0"
-              y="0"
-              width="100"
-              height="100"
-              preserveAspectRatio="xMidYMid slice"
-              mask={shouldMask ? `url(#${maskId})` : undefined}
-            />
-          ) : (
-            <rect
-              x="0"
-              y="0"
-              width="100"
-              height="100"
-              fill={fallbackColor}
-              mask={shouldMask ? `url(#${maskId})` : undefined}
+      {/* The cover, its blurred backdrop and its mask swap together. */}
+      <AnimatePresence initial={false}>
+        <motion.div key={variant} {...swapPop(swapStep)} className="absolute inset-0">
+          {isUnrevealed && (
+            <div
+              className="absolute inset-0 overflow-hidden"
+              style={
+                hasCoverImage
+                  ? {
+                      backgroundImage: `url(${coverImage})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      filter: 'blur(40px)',
+                      transform: 'scale(1.1)',
+                    }
+                  : {
+                      backgroundColor: fallbackColor,
+                      opacity: 0.3,
+                    }
+              }
             />
           )}
-        </svg>
-      </motion.div>
+
+          {isInactive && (
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                backdropFilter: 'blur(20px)',
+              }}
+            />
+          )}
+
+          <motion.div
+            className="absolute inset-0"
+            animate={{
+              scale: isRevealing || isRevealed ? 1 : 1.1,
+            }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+          >
+            <svg
+              className="absolute inset-0 w-full h-full"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="xMidYMid slice"
+            >
+              <defs>
+                <mask id={maskId}>
+                  <rect x="0" y="0" width="100" height="100" fill="black" />
+                  <motion.rect
+                    key={variant}
+                    fill="white"
+                    initial="entrance"
+                    animate={maskState}
+                    variants={maskVariants}
+                    transition={
+                      maskState === 'initial'
+                        ? entranceTransition
+                        : revealTransition
+                    }
+                  />
+                </mask>
+              </defs>
+              {hasCoverImage ? (
+                <image
+                  href={coverImage}
+                  x="0"
+                  y="0"
+                  width="100"
+                  height="100"
+                  preserveAspectRatio="xMidYMid slice"
+                  mask={shouldMask ? `url(#${maskId})` : undefined}
+                />
+              ) : (
+                <rect
+                  x="0"
+                  y="0"
+                  width="100"
+                  height="100"
+                  fill={fallbackColor}
+                  mask={shouldMask ? `url(#${maskId})` : undefined}
+                />
+              )}
+            </svg>
+          </motion.div>
+        </motion.div>
+      </AnimatePresence>
 
       <AnimatePresence>
         {isUnrevealed && isHovered && !isRevealing && (

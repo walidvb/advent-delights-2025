@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'motion/react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { DiscoBall, Peace } from './advent/VariantSwitch';
+import { swapPop, sweepStep } from './advent/swap-pop';
 import type { TrackVariant } from './advent/types';
 import { cn } from '@/lib/utils';
 import pool from './peek-pool.json';
@@ -50,6 +51,14 @@ let dealt: PeekDay[] | null = null;
 const neverChanges = () => () => {};
 
 function useDealtDays() {
+  // Leaving the page drops the deal, so coming back to it — by the logo link,
+  // say, rather than a reload — deals afresh.
+  useEffect(
+    () => () => {
+      dealt = null;
+    },
+    [],
+  );
   return useSyncExternalStore(
     neverChanges,
     () => (dealt ??= deal(pool as PeekDay[])),
@@ -156,45 +165,42 @@ function Cell({
         playing && 'z-[3]',
       )}
     >
-      <span
-        className={cn(
-          'absolute inset-0 overflow-hidden rounded-[3px] lg:rounded-[4px]',
-          // The ring follows the Variant: a zinc-900 outline is invisible
-          // against the heavy background.
-          playing &&
-            cn(
-              'outline-[1.5px] outline-offset-[-1.5px]',
-              variant === 'light' ? 'outline-zinc-900' : 'outline-zinc-100',
-            ),
-        )}
-      >
-        {/*
-          The art is inset past the edges so the blur has something to smear
-          into — blurring flush to the border fades the cover's own corners out.
-          Only the playing cover is sharp; hovering lifts the card without
-          giving its artwork away.
-        */}
-        {/*
-          Switching Variant cross-fades each cover in turn, so the swap ripples
-          across the grid in reading order rather than snapping all at once.
-        */}
-        {day && (
-          <AnimatePresence initial={false}>
-            <motion.span
-              key={variant}
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3, delay: (n - 1) * 0.025 }}
+      {/*
+        Switching Variant pops each cover in turn, sweeping corner to corner.
+        The pill takes the first two cells, so Day n sits in cell n + 1.
+      */}
+      {day && (
+        <AnimatePresence initial={false}>
+          <motion.span
+            key={variant}
+            {...swapPop(sweepStep(n + 1))}
+            className={cn(
+              'absolute inset-0 overflow-hidden rounded-[3px] lg:rounded-[4px]',
+              // The ring follows the Variant: a zinc-900 outline is invisible
+              // against the heavy background.
+              playing &&
+                cn(
+                  'outline-[1.5px] outline-offset-[-1.5px]',
+                  variant === 'light' ? 'outline-zinc-900' : 'outline-zinc-100',
+                ),
+            )}
+          >
+            {/*
+              The art is inset past the edges so the blur has something to smear
+              into — blurring flush to the border fades the cover's own corners
+              out. Only the playing cover is sharp; hovering lifts the card
+              without giving its artwork away.
+            */}
+            <span
               className="absolute -inset-2 bg-zinc-300 bg-cover bg-center bg-no-repeat transition-[filter] duration-[250ms]"
               style={{
                 backgroundImage: `url(${day[variant].cover})`,
                 filter: playing ? 'none' : 'blur(3px) saturate(.7)',
               }}
             />
-          </AnimatePresence>
-        )}
-      </span>
+          </motion.span>
+        </AnimatePresence>
+      )}
 
       <span
         className="absolute right-[3px] bottom-[1px] z-[1] text-[11px] font-bold text-zinc-100 [text-shadow:1px_1px_0_rgb(0,0,0)] lg:right-[5px] lg:bottom-[2px] lg:text-[15px]"

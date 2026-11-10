@@ -1,6 +1,7 @@
 'use client';
 
 import { CalendarCard } from './CalendarCard';
+import { sweepStep } from './swap-pop';
 import { Day } from './types';
 
 interface CalendarGridProps {
@@ -47,6 +48,7 @@ export function CalendarGrid({
             onHover={onHover}
             onMobileSelect={() => onMobileSelect(day)}
             entranceDelay={index * 0.05}
+            swapStep={sweepStep(offset + index)}
           />
         ))}
       </div>
