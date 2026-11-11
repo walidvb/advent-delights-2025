@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { useId, useMemo, useState } from 'react';
 import { useAdventDay } from './AdventDayContext';
 import { Day, TrackVariant } from './types';
@@ -78,6 +78,10 @@ export function CalendarCard({
   const [isRevealing, setIsRevealing] = useState(false);
   // Per Variant: during a swap both covers are mounted, each with its own mask.
   const maskId = `${useId()}-${variant}`;
+  // Today's unopened card asks to be opened: a short wiggle every few seconds,
+  // like a present being shaken. Left still for anyone who asked for less motion.
+  const reduceMotion = useReducedMotion();
+  const shake = isToday && isUnrevealed && !reduceMotion;
 
   const coverImage = day.tracks[variant]?.coverImage;
 
@@ -236,12 +240,26 @@ export function CalendarCard({
           'cursor-pointer': !isInactive,
         }
       )}
+      // Pivoting low and dying out, like a box nudged on a table: a quick
+      // first swing, each one after it smaller and slower.
+      style={{ originY: 0.85 }}
       animate={
-        isToday && isUnrevealed ? { scale: [1, 1.1, 1, 1.1, 1] } : { scale: 1 }
+        shake
+          ? {
+              rotate: [0, -8, 6, -3.5, 1.5, -0.5, 0],
+              scale: [1, 1.04, 1.03, 1.015, 1.005, 1, 1],
+            }
+          : { rotate: 0, scale: 1 }
       }
       transition={
-        isToday
-          ? { duration: 0.7, repeat: Infinity, repeatDelay: 2.5 }
+        shake
+          ? {
+              duration: 0.95,
+              times: [0, 0.1, 0.27, 0.46, 0.65, 0.83, 1],
+              ease: 'easeInOut',
+              repeat: Infinity,
+              repeatDelay: 2.6,
+            }
           : { duration: 0.2 }
       }
       onClick={handleClick}
