@@ -5,7 +5,7 @@ import { forgetPendingCode, requestSignInCode, signOut, verifySignInCode } from 
 
 export async function requestCodeAction(formData: FormData) {
   const result = await requestSignInCode(String(formData.get('email') ?? ''));
-  redirect(result === 'ok' ? '/sign-in' : '/sign-in?error=email');
+  redirect(result === 'ok' ? '/sign-in' : `/sign-in?error=${result}`);
 }
 
 export async function verifyCodeAction(formData: FormData) {

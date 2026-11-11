@@ -77,7 +77,7 @@ function normaliseEmail(raw: string) {
  * Never branches on whether email is configured — `sendEmail` decides, and with
  * no key it prints the code to the server console.
  */
-export async function requestSignInCode(rawEmail: string): Promise<'ok' | 'email'> {
+export async function requestSignInCode(rawEmail: string): Promise<'ok' | 'email' | 'send'> {
   const email = normaliseEmail(rawEmail);
   if (!email) return 'email';
 
@@ -92,11 +92,19 @@ export async function requestSignInCode(rawEmail: string): Promise<'ok' | 'email
       .bind(id, email, await sha256(`${id}:${code}`), Date.now() + CODE_TTL_MS),
   ]);
 
-  await sendEmail({
-    to: email,
-    subject: `${code} is your Advent Delights sign-in code`,
-    text: `Your sign-in code is ${code}.\n\nIt expires in 10 minutes. If you didn't ask to sign in, ignore this message.`,
-  });
+  // A refused send (a bad key, a quota hit) is reported back rather than thrown,
+  // so the person sees a message instead of a server error page. The pending
+  // cookie is not set, so they stay on the email step and can try again.
+  try {
+    await sendEmail({
+      to: email,
+      subject: `${code} is your Advent Delights sign-in code`,
+      text: `Your sign-in code is ${code}.\n\nIt expires in 10 minutes. If you didn't ask to sign in, ignore this message.`,
+    });
+  } catch (error) {
+    console.error('Sign-in code email failed', error);
+    return 'send';
+  }
 
   (await cookies()).set(PENDING_COOKIE, id, {
     httpOnly: true,
