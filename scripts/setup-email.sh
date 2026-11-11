@@ -335,11 +335,10 @@ if [[ -z "${RESEND_API_KEY:-}" ]]; then
   exit 1
 fi
 write_env RESEND_API_KEY "$RESEND_API_KEY"
+# The sender is fixed in src/lib/email.ts (FROM), not configured. Keep in step.
+EMAIL_FROM="no-reply@adventdelights.club"
 printf '\n'
-say "Mail will be sent from this address. It must be at $EMAIL_DOMAIN."
-ask EMAIL_FROM "From address [advent@$EMAIL_DOMAIN]:"
-[[ -n "${EMAIL_FROM:-}" ]] || EMAIL_FROM="advent@$EMAIL_DOMAIN"
-write_env EMAIL_FROM "$EMAIL_FROM"
+note "Mail is always sent from $EMAIL_FROM (set in src/lib/email.ts)."
 
 # ── 5 ─────────────────────────────────────────────────────────────────────
 stage "Domain verification"
@@ -372,10 +371,10 @@ done
 
 # ── 6 ─────────────────────────────────────────────────────────────────────
 stage "Deployed Worker secrets"
-say "The same two values have to reach the deployed Worker. Local .dev.vars is"
+say "The API key has to reach the deployed Worker too. Local .dev.vars is"
 say "not uploaded — Cloudflare keeps its own copy."
 printf '\n'
-for NAME in RESEND_API_KEY EMAIL_FROM; do
+for NAME in RESEND_API_KEY; do
   VALUE="${!NAME}"
   if worker_has_secret "$NAME"; then
     note "$NAME already exists on the Worker."
@@ -410,8 +409,8 @@ else
   warn "Resend refused it:"
   note "$RESPONSE"
   printf '\n'
-  say "Common causes: the domain isn't verified yet, or EMAIL_FROM isn't at"
-  say "$EMAIL_DOMAIN. Fix and re-run — nothing you've entered is lost."
+  say "Common causes: the domain isn't verified yet, or $EMAIL_DOMAIN isn't"
+  say "the domain of $EMAIL_FROM. Fix and re-run — nothing you've entered is lost."
   exit 1
 fi
 printf '\n'

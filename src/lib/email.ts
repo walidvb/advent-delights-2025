@@ -4,9 +4,16 @@ declare global {
   interface CloudflareEnv {
     /** Set by scripts/setup-email.sh. Absent in local dev, and that is fine. */
     RESEND_API_KEY?: string;
-    EMAIL_FROM?: string;
   }
 }
+
+/**
+ * Every message comes from here, on the domain verified with Resend. Fixed in
+ * code rather than configured, so a stale secret can't send from somewhere else.
+ */
+const FROM = 'no-reply@adventdelights.club';
+/** Answers to the no-reply address reach a person instead. */
+const REPLY_TO = 'hello@walidvb.com';
 
 /**
  * Sends one message. The only thing in the app that talks to the email
@@ -25,16 +32,16 @@ export async function sendEmail(message: {
   to: string;
   subject: string;
   text: string;
+  /** Optional; mail apps that can't show it fall back to `text`. */
+  html?: string;
 }): Promise<void> {
   const { env } = await getCloudflareContext({ async: true });
 
-  // Which key and sender this Worker actually holds, to tell a missing or stale
-  // secret apart from a refused message. Only the key's prefix and length are
-  // logged: the key itself must never reach the logs.
+  // Which key this Worker actually holds, to tell a missing or stale secret
+  // apart from a refused message. Only the key's prefix and length are logged:
+  // the key itself must never reach the logs.
   const key = env.RESEND_API_KEY;
-  console.log(
-    `[email] key=${key ? `${key.slice(0, 6)}… (${key.length} chars)` : 'missing'} from=${env.EMAIL_FROM ?? 'default'}`,
-  );
+  console.log(`[email] key=${key ? `${key.slice(0, 6)}… (${key.length} chars)` : 'missing'}`);
 
   if (!env.RESEND_API_KEY) {
     console.log(
@@ -49,10 +56,7 @@ export async function sendEmail(message: {
       authorization: `Bearer ${env.RESEND_API_KEY}`,
       'content-type': 'application/json',
     },
-    body: JSON.stringify({
-      from: env.EMAIL_FROM ?? 'hello@walidvb.com',
-      ...message,
-    }),
+    body: JSON.stringify({ from: FROM, reply_to: REPLY_TO, ...message }),
   });
 
   if (!response.ok) {
