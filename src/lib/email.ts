@@ -25,6 +25,8 @@ export async function sendEmail(message: {
   to: string;
   subject: string;
   text: string;
+  /** Optional; mail apps that can't show it fall back to `text`. */
+  html?: string;
 }): Promise<void> {
   const { env } = await getCloudflareContext({ async: true });
 

@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { calendarPath } from '@/lib/calendars';
 import { COVER_TYPES, coverProblem } from '@/lib/covers';
 import { sendEmail } from '@/lib/email';
+import { button, emailLayout, heading, linkLine, note, paragraph } from '@/lib/email-layout';
 import { lookupTrack, resolveTracks, type TrackLookup } from '@/lib/media';
 import {
   createSubmission,
@@ -87,6 +88,8 @@ async function sendReceipt(
   try {
     const incoming = await headers();
     const base = `${incoming.get('x-forwarded-proto') ?? 'http'}://${incoming.get('host')}`;
+    const editUrl = base + claimed.editPath;
+    const calendarUrl = base + claimed.calendarPath;
     await sendEmail({
       to: email,
       subject: `Your Day in ${calendarName}`,
@@ -94,13 +97,26 @@ async function sendReceipt(
         `Thanks for contributing to ${calendarName}.`,
         '',
         'Change your submission any time with this link — keep it, it is the only way back in:',
-        base + claimed.editPath,
+        editUrl,
         '',
         'The Calendar itself, for December:',
-        base + claimed.calendarPath,
+        calendarUrl,
         '',
         "This is the only message we'll send you.",
       ].join('\n'),
+      html: emailLayout({
+        title: `Your Day in ${calendarName}`,
+        preheader: 'Your edit link — keep this email, it is the only way back in.',
+        blocks: [
+          heading(`Thanks for contributing to ${calendarName}`),
+          paragraph('Your tracks are in. Change your submission any time with this link — keep this email, it is the only way back in.'),
+          button(editUrl, 'Edit my submission'),
+          linkLine(editUrl),
+          paragraph('The Calendar itself, for December:'),
+          button(calendarUrl, `Open ${calendarName}`, 'secondary'),
+          note('This is the only message we’ll send you.'),
+        ],
+      }),
     });
   } catch (error) {
     console.error('[receipt] submission saved but the receipt did not send', error);
