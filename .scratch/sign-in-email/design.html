@@ -1,0 +1,138 @@
+<!doctype html>
+<!--
+  Design mock for the Curator sign-in code email. Not wired up.
+
+  Built the way the real email has to be: 560px single column, table layout,
+  inline-able styles, no web fonts (the script title is the existing
+  public/title.png), so it carries over to a template almost as-is.
+  Images here point at ../../public; the sent email needs absolute URLs on
+  advent.diggersdelights.net.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light only">
+<title>Sign-in email</title>
+<style>
+  /* Mock chrome only: the fake inbox around the email. */
+  body { margin: 0; background: #e9edf0; font-family: Avenir, "Avenir Next", system-ui, -apple-system, sans-serif; }
+  .mock { max-width: 640px; margin: 0 auto; padding: 32px 16px 64px; }
+  .label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #6b7a80; margin: 0 0 8px 4px; }
+  .inbox { background: #fff; border-radius: 12px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,.05); margin-bottom: 32px; }
+  .inbox .avatar { width: 36px; height: 36px; border-radius: 50%; background: #0f2a2e url(../../public/angle-disk.png) center/130% no-repeat; flex: none; }
+  .inbox .row { display: flex; justify-content: space-between; font-size: 14px; }
+  .inbox .from { font-weight: 600; color: #111; }
+  .inbox .time { color: #8a979c; font-size: 12px; }
+  .inbox .subject { font-size: 14px; color: #111; margin-top: 2px; }
+  .inbox .pre { font-size: 13px; color: #6b7a80; margin-top: 2px; }
+
+  /* Email styles below would be inlined by the template. */
+  @media (max-width: 600px) {
+    .em-pad { padding-left: 24px !important; padding-right: 24px !important; }
+    .em-code { font-size: 40px !important; letter-spacing: 10px !important; }
+    .em-disk { width: 120px !important; height: 120px !important; margin-right: -44px !important; }
+    .em-disk-cell { width: 76px !important; }
+    .em-title { width: 190px !important; }
+  }
+</style>
+</head>
+<body>
+<div class="mock">
+
+  <p class="label">In the inbox</p>
+  <div class="inbox">
+    <div class="avatar"></div>
+    <div style="flex:1;min-width:0">
+      <div class="row"><span class="from">Advent Delights</span><span class="time">09:41</span></div>
+      <div class="subject">482913 is your Advent Delights sign-in code</div>
+      <div class="pre">Good for 10 minutes. No password, ever.</div>
+    </div>
+  </div>
+
+  <p class="label">Opened</p>
+
+  <!-- ===================== EMAIL ===================== -->
+  <!-- Preheader: what the inbox row shows after the subject. -->
+  <div style="display:none;max-height:0;overflow:hidden">Good for 10 minutes. No password, ever.</div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+         style="background:#dfe9f3;background-image:linear-gradient(180deg,#cfe3f2 0%,#f4eef2 45%,#bcd3ec 100%);border-radius:16px">
+    <tr>
+      <td align="center" style="padding:32px 12px">
+
+        <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0"
+               style="width:100%;max-width:560px;border-radius:20px;overflow:hidden;background:#ffffff;box-shadow:0 1px 2px rgba(0,0,0,.04),0 16px 48px rgba(30,60,90,.16)">
+
+          <!-- Header: the night-teal of the OG card, title script, record sliding out of its sleeve -->
+          <tr>
+            <td style="background:#10292d;background-image:radial-gradient(120% 140% at 0% 0%,#0b1f22 0%,#143438 55%,#3c6a66 100%);padding:0">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td class="em-pad" valign="middle" style="padding:36px 0 32px 40px">
+                    <img class="em-title" src="../../public/title.png" width="240" alt="Advent Delights"
+                         style="display:block;width:240px;max-width:100%;height:auto;border:0">
+                    <p style="margin:10px 0 0 4px;white-space:nowrap;font-family:Avenir,'Avenir Next',Helvetica,Arial,sans-serif;font-size:13px;letter-spacing:.04em;color:#c9dcd9">musical calendar</p>
+                  </td>
+                  <td class="em-disk-cell" valign="middle" align="right" style="padding:0;width:120px">
+                    <img class="em-disk" src="../../public/angle-disk.png" width="190" height="190" alt=""
+                         style="display:block;width:190px;height:190px;margin-right:-70px;border:0">
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td class="em-pad" style="padding:40px 40px 8px;font-family:Avenir,'Avenir Next',Helvetica,Arial,sans-serif;color:#18181b">
+              <h1 style="margin:0;font-size:24px;line-height:1.25;font-weight:400">Here&rsquo;s your sign-in code</h1>
+              <p style="margin:8px 0 0;font-size:15px;line-height:1.55;color:#71717a">
+                Type it on the sign-in page and you&rsquo;re back at your calendar.
+              </p>
+            </td>
+          </tr>
+
+          <!-- The code: one run of text so a long-press copies all six digits cleanly -->
+          <tr>
+            <td class="em-pad" style="padding:24px 40px 0">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                     style="background:#f6f3ec;border:1px solid #ebe3d2;border-radius:14px">
+                <tr>
+                  <td align="center" style="padding:26px 12px 22px">
+                    <div class="em-code"
+                         style="font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace;font-size:46px;line-height:1;font-weight:500;letter-spacing:14px;padding-left:14px;color:#10292d">482913</div>
+                    <div style="width:56px;height:3px;border-radius:3px;margin:18px auto 0;background:#c9a55b;background-image:linear-gradient(90deg,#b8914a,#e2c27e,#b8914a)"></div>
+                    <p style="margin:14px 0 0;font-family:Avenir,'Avenir Next',Helvetica,Arial,sans-serif;font-size:13px;color:#8a7a5a">
+                      Expires in 10 minutes &middot; works once
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="em-pad" style="padding:28px 40px 36px;font-family:Avenir,'Avenir Next',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:#71717a">
+              Didn&rsquo;t ask to sign in? You can ignore this email &mdash; nobody gets in without the code.
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td class="em-pad" style="padding:20px 40px 24px;border-top:1px solid #f0f0f2;font-family:Avenir,'Avenir Next',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.5;color:#a1a1aa">
+              <a href="https://advent.diggersdelights.net" style="color:#52525b;text-decoration:none;font-weight:600">Advent Delights</a>
+              &nbsp;&middot;&nbsp; 25 days, 25 selectors, and 2 moods
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+  <!-- =================== /EMAIL ====================== -->
+
+</div>
+</body>
+</html>
