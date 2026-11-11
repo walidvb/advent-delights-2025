@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { getCurator } from '@/lib/auth';
+import { getCurator, setPassword } from '@/lib/auth';
 import { createCalendar, updateCalendar, type ChosenSlug } from '@/lib/calendars';
 import { deleteSubmission } from '@/lib/curation';
 
@@ -59,4 +59,12 @@ export async function deleteSubmissionAction(formData: FormData) {
   await deleteSubmission(id, curator.id, Number(formData.get('day')));
 
   redirect(`/dashboard/calendar/${id}`);
+}
+
+export async function setPasswordAction(formData: FormData) {
+  const curator = await getCurator();
+  if (!curator) redirect('/sign-in');
+
+  const result = await setPassword(curator.id, String(formData.get('password') ?? ''));
+  redirect(`/dashboard?passwordSet=${result}`);
 }

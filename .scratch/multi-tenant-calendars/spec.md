@@ -140,7 +140,8 @@ rather than as a purely static export.
 
 ### Modules being built
 
-- **Identity**: passwordless sign-in via a numeric code sent by email. Sessions
+- **Identity**: sign-in via a numeric code sent by email. Once signed in, a
+  Curator may set an optional password and use either from then on. Sessions
   persist. Only Curators have accounts; Contributors never do.
 - **Calendar management**: create, list, and configure Calendars. Owns Slug
   generation from the Calendar's name, collision handling by numeric suffix,

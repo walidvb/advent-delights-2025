@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurator, pendingCodeEmail } from '@/lib/auth';
-import { requestCodeAction, useAnotherEmailAction, verifyCodeAction } from './actions';
+import { passwordSignInAction, requestCodeAction, useAnotherEmailAction, verifyCodeAction } from './actions';
 import { CodeInput } from './CodeInput';
 
 const MESSAGES: Record<string, string> = {
@@ -10,6 +10,9 @@ const MESSAGES: Record<string, string> = {
   invalid: "That code isn't right. Check it and try again.",
   expired: 'That code has expired. Ask for a new one.',
   locked: 'Too many wrong tries, so that code no longer works. Ask for a new one.',
+  mismatch: "That email and password don't match. Check them, or ask for a code instead.",
+  'password-locked':
+    'Too many wrong passwords on this account. Sign in with a code — that unlocks your password again.',
 };
 
 const field =
@@ -65,7 +68,10 @@ export default async function SignInPage({
             <>
               <div className="flex flex-col gap-1">
                 <h1 className="text-2xl font-normal">Sign in</h1>
-                <p className="text-sm text-zinc-500">No password, ever. We&apos;ll email you a six-digit code.</p>
+                <p className="text-sm text-zinc-500">
+                  We&apos;ll email you a six-digit code. Set a password once you&apos;re in, if you&apos;d
+                  rather use one.
+                </p>
               </div>
               <form action={requestCodeAction} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
@@ -86,6 +92,31 @@ export default async function SignInPage({
                 <button type="submit" className={button}>
                   Send me a code
                 </button>
+                <details className="flex flex-col gap-4" open={error === 'mismatch' || error === 'password-locked'}>
+                  <summary className="cursor-pointer text-sm text-zinc-500 underline">
+                    Sign in with a password instead
+                  </summary>
+                  <div className="mt-4 flex flex-col gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label
+                        htmlFor="password"
+                        className="text-xs font-medium uppercase tracking-wide text-zinc-500"
+                      >
+                        Password
+                      </label>
+                      <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        autoComplete="current-password"
+                        className={field}
+                      />
+                    </div>
+                    <button type="submit" formAction={passwordSignInAction} className={button}>
+                      Sign in with password
+                    </button>
+                  </div>
+                </details>
               </form>
             </>
           )}
