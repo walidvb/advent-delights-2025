@@ -59,6 +59,12 @@ export function Player({
       : variant;
 
   const nowPlaying = day?.tracks[displayVariant];
+
+  // The player reports buffering mid-track, but says nothing while a new Track
+  // first loads, so a Track also counts as loading until it has played a moment.
+  const trackKey = day ? `${day.dayIndex}:${displayVariant}` : null;
+  const [startedKey, setStartedKey] = useState<string | null>(null);
+  const isLoading = isPlaying && (isBuffering || startedKey !== trackKey);
   const { coverImage, buyLink, artistName, trackName } = nowPlaying ?? {};
 
   // Every Day has failed in a row: stop rather than skip round the Calendar forever.
@@ -75,6 +81,7 @@ export function Player({
 
   const handleProgress = (state: Progress) => {
     failures.current = 0;
+    if (state.playedSeconds > 0) setStartedKey(trackKey);
     if (seeking) return;
     setProgress(state.played);
     setDuration(state.duration);
@@ -123,7 +130,7 @@ export function Player({
         onError={handleError}
         refreshStream={refreshStream}
       />
-      <div className="mx-auto flex justify-between flex-wrap max-w-4xl items-center gap-4 px-6 py-3">
+      <div className="flex w-full flex-wrap items-center justify-between gap-4 px-6 py-3">
         {day ? (
           <>
             <div className="flex items-center gap-3 -0">
@@ -188,7 +195,7 @@ export function Player({
                   onClick={onPlayPause}
                   className="text-zinc-900 transition-colors hover:text-zinc-600"
                 >
-                  {isPlaying && isBuffering ? (
+                  {isLoading ? (
                     <LoaderIcon className="h-8 w-8 md:h-10 md:w-10 animate-spin" />
                   ) : isPlaying ? (
                     <PauseIcon className="h-8 w-8 md:h-10 md:w-10" />
@@ -257,35 +264,29 @@ export function Player({
             )}
           </div>
         )}
-        <p
-          className={cn(
-            'text-sm text-zinc-500 shrink-0',
-            'text-xs lg:absolute lg:right-8 lg:bottom-2',
-            ' xl:absolute xl:right-8 xl:top-1/2 xl:bottom-auto xl:translate-y-[-50%]'
-          )}
-        >
-          Made in 2025, with <span className="text-red-500">🩶</span> by
-          <a
-            href="https://https://alinema-vanboetzelaer.framer.website"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-teal-600 hover:text-teal-700 hover:underline"
-          >
-            {' '}
-            Aline
-          </a>{' '}
-          &{' '}
-          <a
-            href="https://walidvb.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-teal-600 hover:text-teal-700 hover:underline"
-          >
-            {' '}
-            Walid
-          </a>
-        </p>
       </div>
+      <p className="border-t border-zinc-100 px-6 py-1.5 text-center text-xs text-zinc-500">
+        Made in 2025, with <span className="text-red-500">🩶</span> by
+        <a
+          href="https://alinema-vanboetzelaer.framer.website"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-teal-600 hover:text-teal-700 hover:underline"
+        >
+          {' '}
+          Aline
+        </a>{' '}
+        &{' '}
+        <a
+          href="https://walidvb.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-teal-600 hover:text-teal-700 hover:underline"
+        >
+          {' '}
+          Walid
+        </a>
+      </p>
     </motion.div>
   );
 }
