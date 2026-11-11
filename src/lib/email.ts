@@ -52,7 +52,10 @@ export async function sendEmail(message: {
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      from: env.EMAIL_FROM ?? 'hello@walidvb.com',
+      // Sent from a no-reply address on the verified domain; answers go to a
+      // person instead.
+      from: env.EMAIL_FROM ?? 'no-reply@adventdelights.club',
+      reply_to: 'hello@walidvb.com',
       ...message,
     }),
   });
