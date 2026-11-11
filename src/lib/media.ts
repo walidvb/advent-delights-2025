@@ -1,6 +1,7 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { detectProvider, normalizeUrl, parseUrl } from '@cucu/media/core';
 import { readMedia, resolveBandcampStream } from '@cucu/media/client';
+import { expandShortLink } from '@cucu/media/server';
 import { purgeCalendarPayload } from './calendar-payload';
 import type { TrackDraft, Variant } from './submissions';
 
@@ -55,6 +56,8 @@ const isBandcampButNotRelease = (raw: string) =>
 const NOT_A_RELEASE =
   "That's a Bandcamp page but not a release. Open the track or album itself and copy that link.";
 const RELEASE_GONE = 'That Bandcamp release is gone. Link the track from somewhere else.';
+const SHORT_LINK_DEAD =
+  "That SoundCloud link didn't open. Try again, or open the track in SoundCloud and copy the link from your browser.";
 const NOTHING_STREAMS =
   "Nothing on that Bandcamp release can be listened to without buying it, so the Calendar can't play it. Link the track from somewhere else.";
 
@@ -114,7 +117,13 @@ export async function resolveTracks(
     const typedTrackId = track.providerTrackId;
     track.providerTrackId = '';
     track.streamUrl = '';
-    track.url = normalizeUrl(track.url) ?? track.url;
+    // A SoundCloud app share (on.soundcloud.com) is expanded here rather than
+    // left to the API: when the API doesn't answer, the link is stored as
+    // typed, and the player can't load a short link. A plain HEAD to
+    // SoundCloud, which — unlike Bandcamp — answers the Worker.
+    const expanded = await expandShortLink(track.url);
+    if (!expanded) return `The ${which} track: ${SHORT_LINK_DEAD}`;
+    track.url = normalizeUrl(expanded) ?? expanded;
     // Links from sources nobody reads (and the rest, when the API is down) are
     // stored as typed: the player plays more than we recognise.
     if (!detectProvider(track.url)) continue;
