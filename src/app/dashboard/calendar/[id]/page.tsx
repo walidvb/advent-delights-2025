@@ -16,11 +16,17 @@ async function origin() {
   return `${incoming.get('x-forwarded-proto') ?? 'http'}://${incoming.get('host')}`;
 }
 
-export default async function CalendarSettingsPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CalendarSettingsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ taken?: string }>;
+}) {
   const curator = await getCurator();
   if (!curator) redirect('/sign-in');
 
-  const id = (await params).id;
+  const [id, { taken }] = await Promise.all([params.then((p) => p.id), searchParams]);
   const [calendar, claims, base] = await Promise.all([
     getOwnedCalendar(id, curator.id),
     getClaims(id, curator.id),
@@ -58,6 +64,13 @@ export default async function CalendarSettingsPage({ params }: { params: Promise
             <span className="font-mono text-[11px] uppercase tracking-wide text-zinc-400">
               Two links, two jobs
             </span>
+            {taken && (
+              <p role="status" className="rounded-md border border-border px-3 py-2 text-sm">
+                That address was already taken, so this Calendar is at{' '}
+                <span className="font-mono">{taken}</span>. Change it below if you&apos;d rather
+                have something else.
+              </p>
+            )}
             <CopyLink
               label="Submit link"
               hint="send this now — how people claim a day"

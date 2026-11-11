@@ -15,15 +15,19 @@ export async function createCalendarAction(formData: FormData) {
     String(formData.get('description') ?? ''),
   );
 
-  redirect(result === 'name' ? '/dashboard/new?error=name' : dashboardWithSlugNotice(result));
+  if (result === 'name') redirect('/dashboard/new?error=name');
+
+  // Straight to the Calendar's own page: the two links to share are there, and
+  // having just named it is exactly when the Curator wants to send them.
+  redirect(withSlugNotice(`/dashboard/calendar/${result.id}`, result));
 }
 
 /**
  * A taken Slug is never a rejection, but the Curator is told they were given a
  * variation rather than left to spot the number on the end for themselves.
  */
-function dashboardWithSlugNotice(chosen: ChosenSlug) {
-  return chosen.taken ? `/dashboard?taken=${encodeURIComponent(chosen.slug)}` : '/dashboard';
+function withSlugNotice(path: string, chosen: ChosenSlug) {
+  return chosen.taken ? `${path}?taken=${encodeURIComponent(chosen.slug)}` : path;
 }
 
 /**
@@ -43,7 +47,7 @@ export async function updateCalendarAction(formData: FormData) {
     isPublic: formData.get('is_public') === 'on',
   });
 
-  redirect(result ? dashboardWithSlugNotice(result) : '/dashboard');
+  redirect(result ? withSlugNotice(`/dashboard/calendar/${id}`, result) : '/dashboard');
 }
 
 /**
