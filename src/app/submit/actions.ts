@@ -5,7 +5,7 @@ import { headers } from 'next/headers';
 import { calendarPath } from '@/lib/calendars';
 import { COVER_TYPES, coverProblem } from '@/lib/covers';
 import { sendEmail } from '@/lib/email';
-import { button, emailLayout, heading, linkLine, note, paragraph } from '@/lib/email-layout';
+import { button, heading, linkLine, note, paragraph, renderEmail } from '@/lib/email-layout';
 import { lookupTrack, resolveTracks, type TrackLookup } from '@/lib/media';
 import {
   createSubmission,
@@ -90,22 +90,12 @@ async function sendReceipt(
     const base = `${incoming.get('x-forwarded-proto') ?? 'http'}://${incoming.get('host')}`;
     const editUrl = base + claimed.editPath;
     const calendarUrl = base + claimed.calendarPath;
+    const subject = `Your Day in ${calendarName}`;
     await sendEmail({
       to: email,
-      subject: `Your Day in ${calendarName}`,
-      text: [
-        `Thanks for contributing to ${calendarName}.`,
-        '',
-        'Change your submission any time with this link — keep it, it is the only way back in:',
-        editUrl,
-        '',
-        'The Calendar itself, for December:',
-        calendarUrl,
-        '',
-        "This is the only message we'll send you.",
-      ].join('\n'),
-      html: emailLayout({
-        title: `Your Day in ${calendarName}`,
+      subject,
+      ...renderEmail({
+        title: subject,
         preheader: 'Your edit link — keep this email, it is the only way back in.',
         blocks: [
           heading(`Thanks for contributing to ${calendarName}`),

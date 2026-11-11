@@ -3,42 +3,52 @@
  * the record, a white card, the tagline footer. Design mock:
  * `.scratch/sign-in-email/design.html`.
  *
- * A message is `emailLayout` around a run of blocks — `heading`, `paragraph`,
- * `codePanel`, `button`, `linkLine`, `note` — each one table row of the card.
- * Blocks take plain text and escape it, so whatever a Curator or Contributor
- * typed (a Calendar name, say) can be passed straight in.
+ * A message is `renderEmail` around a run of blocks — `heading`, `paragraph`,
+ * `codePanel`, `button`, `linkLine`, `note`. Each block is one table row of
+ * the card plus its plain-text line, so the HTML and the text version are
+ * written once and can't drift apart. Blocks take plain text and escape it, so
+ * whatever a Curator or Contributor typed (a Calendar name, say) can be passed
+ * straight in.
  *
  * Written for mail apps, not browsers: one 560px column of tables, styles
  * inline, no web fonts (the script title is an image). The `<style>` block is
  * only the phone-width tweaks; apps that drop it still get a working email.
  *
- * Images load from the production site even when sent from elsewhere: a mail
- * app can't reach localhost or a preview deploy behind protection.
+ * ponytail: images and the header link always point at the production site,
+ * even when sent from localhost or a preview (a mail app can't reach those).
+ * So a new image shows only once deployed, and a preview's email shows
+ * production's images. Derive the base from the request if that ever bites.
  */
 const SITE = 'https://advent.diggersdelights.net';
 
 const SANS = "Avenir,'Avenir Next',Helvetica,Arial,sans-serif";
 const INK = '#10292d';
 
-export function escapeHtml(text: string) {
+type Block = { html: string; text: string };
+
+function escapeHtml(text: string) {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-function row(inner: string, top: number) {
-  return `<tr><td class="em-pad" style="padding:${top}px 40px 0;font-family:${SANS};color:#18181b">${inner}</td></tr>`;
+/** One row of the card, with what the plain-text version says in its place. */
+function row(inner: string, padTop: number, text: string): Block {
+  return {
+    html: `<tr><td class="em-pad" style="padding:${padTop}px 40px 0;font-family:${SANS};color:#18181b">${inner}</td></tr>`,
+    text,
+  };
 }
 
 export function heading(text: string) {
-  return row(`<h1 style="margin:0;font-size:24px;line-height:1.25;font-weight:400">${escapeHtml(text)}</h1>`, 40);
+  return row(`<h1 style="margin:0;font-size:24px;line-height:1.25;font-weight:400">${escapeHtml(text)}</h1>`, 40, text);
 }
 
 export function paragraph(text: string) {
-  return row(`<p style="margin:0;font-size:15px;line-height:1.55;color:#52525b">${escapeHtml(text)}</p>`, 12);
+  return row(`<p style="margin:0;font-size:15px;line-height:1.55;color:#52525b">${escapeHtml(text)}</p>`, 12, text);
 }
 
 /** Small print under the rest, set apart: "didn't ask for this?" and the like. */
 export function note(text: string) {
-  return row(`<p style="margin:0;font-size:14px;line-height:1.55;color:#71717a">${escapeHtml(text)}</p>`, 28);
+  return row(`<p style="margin:0;font-size:14px;line-height:1.55;color:#71717a">${escapeHtml(text)}</p>`, 28, text);
 }
 
 /** A one-time code, as one run of text so a long-press copies it whole. */
@@ -53,6 +63,7 @@ export function codePanel(code: string, caption: string) {
       </td></tr>
     </table>`,
     24,
+    `${code}\n${caption}`,
   );
 }
 
@@ -66,6 +77,7 @@ export function button(href: string, label: string, kind: 'primary' | 'secondary
       </td></tr>
     </table>`,
     24,
+    `${label}:\n${href}`,
   );
 }
 
@@ -74,11 +86,17 @@ export function linkLine(href: string) {
   return row(
     `<a href="${escapeHtml(href)}" style="font-size:12px;line-height:1.5;color:#a1a1aa;word-break:break-all">${escapeHtml(href)}</a>`,
     10,
+    '', // The button above already spelled the address out in text.
   );
 }
 
-export function emailLayout({ title, preheader, blocks }: { title: string; preheader: string; blocks: string[] }) {
-  return `<!doctype html>
+/** Both bodies of one message, ready to spread into `sendEmail`. */
+export function renderEmail({ title, preheader, blocks }: { title: string; preheader: string; blocks: Block[] }) {
+  const text = blocks
+    .map((block) => block.text)
+    .filter(Boolean)
+    .join('\n\n');
+  const html = `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -123,7 +141,7 @@ export function emailLayout({ title, preheader, blocks }: { title: string; prehe
             </table>
           </td>
         </tr>
-        ${blocks.join('\n        ')}
+        ${blocks.map((block) => block.html).join('\n        ')}
         <tr><td style="padding:36px 0 0;font-size:0;line-height:0">&nbsp;</td></tr>
         <tr>
           <td class="em-pad" style="padding:20px 40px 24px;border-top:1px solid #f0f0f2;font-family:${SANS};font-size:12px;line-height:1.5;color:#a1a1aa">
@@ -137,4 +155,5 @@ export function emailLayout({ title, preheader, blocks }: { title: string; prehe
 </table>
 </body>
 </html>`;
+  return { html, text };
 }

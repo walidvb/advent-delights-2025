@@ -1,7 +1,7 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { cookies } from 'next/headers';
 import { sendEmail } from '@/lib/email';
-import { codePanel, emailLayout, heading, note, paragraph } from '@/lib/email-layout';
+import { codePanel, heading, note, paragraph, renderEmail } from '@/lib/email-layout';
 
 /** A code is good for ten minutes — long enough to switch to a mail app. */
 const CODE_TTL_MS = 10 * 60 * 1000;
@@ -100,8 +100,7 @@ export async function requestSignInCode(rawEmail: string): Promise<'ok' | 'email
     await sendEmail({
       to: email,
       subject: `${code} is your Advent Delights sign-in code`,
-      text: `Your sign-in code is ${code}.\n\nIt expires in 10 minutes. If you didn't ask to sign in, ignore this message.`,
-      html: emailLayout({
+      ...renderEmail({
         title: 'Your Advent Delights sign-in code',
         preheader: 'Good for 10 minutes. No password, ever.',
         blocks: [
