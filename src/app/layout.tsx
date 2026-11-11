@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
+import { SITE_URL } from '@/lib/site';
 import './globals.css';
 
-const img = 'https://advent.diggersdelights.net/og-image.png';
+const img = `${SITE_URL}/og-image.png`;
 
 export const metadata: Metadata = {
   title: 'Advent Delights',
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Advent Delights',
     description: '25 days, 25 selectors, and 2 moods!',
-    url: 'https://advent.diggersdelights.net',
+    url: SITE_URL,
     siteName: 'Advent Delights',
     images: [
       {
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
     description: '25 days, 25 selectors, and 2 moods!',
     images: [img],
   },
-  metadataBase: new URL('https://advent.diggersdelights.net'),
+  metadataBase: new URL(SITE_URL),
 };
 
 export default function RootLayout({

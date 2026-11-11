@@ -19,7 +19,7 @@
  * So a new image shows only once deployed, and a preview's email shows
  * production's images. Derive the base from the request if that ever bites.
  */
-const SITE = 'https://advent.diggersdelights.net';
+import { SITE_URL } from '@/lib/site';
 
 const SANS = "Avenir,'Avenir Next',Helvetica,Arial,sans-serif";
 const INK = '#10292d';
@@ -127,14 +127,14 @@ export function renderEmail({ title, preheader, blocks }: { title: string; prehe
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td class="em-pad" valign="middle" style="padding:36px 0 32px 40px">
-                  <a href="${SITE}" style="text-decoration:none">
-                    <img class="em-title" src="${SITE}/title.png" width="240" alt="Advent Delights"
+                  <a href="${SITE_URL}" style="text-decoration:none">
+                    <img class="em-title" src="${SITE_URL}/title.png" width="240" alt="Advent Delights"
                          style="display:block;width:240px;max-width:100%;height:auto;border:0;color:#ffffff;font-family:${SANS};font-size:24px">
                   </a>
                   <p style="margin:10px 0 0 4px;white-space:nowrap;font-family:${SANS};font-size:13px;letter-spacing:.04em;color:#c9dcd9">musical calendar</p>
                 </td>
                 <td class="em-disk-cell" valign="middle" align="right" style="padding:0;width:120px">
-                  <img class="em-disk" src="${SITE}/email/disk.png" width="190" height="190" alt=""
+                  <img class="em-disk" src="${SITE_URL}/email/disk.png" width="190" height="190" alt=""
                        style="display:block;width:190px;height:190px;margin-right:-70px;border:0">
                 </td>
               </tr>
@@ -145,7 +145,7 @@ export function renderEmail({ title, preheader, blocks }: { title: string; prehe
         <tr><td style="padding:36px 0 0;font-size:0;line-height:0">&nbsp;</td></tr>
         <tr>
           <td class="em-pad" style="padding:20px 40px 24px;border-top:1px solid #f0f0f2;font-family:${SANS};font-size:12px;line-height:1.5;color:#a1a1aa">
-            <a href="${SITE}" style="color:#52525b;text-decoration:none;font-weight:600">Advent Delights</a>
+            <a href="${SITE_URL}" style="color:#52525b;text-decoration:none;font-weight:600">Advent Delights</a>
             &nbsp;&middot;&nbsp; 25 days, 25 selectors, and 2 moods
           </td>
         </tr>
