@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
@@ -24,7 +25,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Uploads source maps to the personal Sentry org when SENTRY_AUTH_TOKEN is set
+// in the build environment; without it the build still succeeds, unsymbolicated.
+export default withSentryConfig(nextConfig, {
+  org: "cucu-he",
+  project: "advent",
+  silent: !process.env.CI,
+});
 
 // Makes the wrangler.jsonc bindings (DB, BUCKET) available to `next dev`.
 initOpenNextCloudflareForDev();
