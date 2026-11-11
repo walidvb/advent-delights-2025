@@ -2,7 +2,7 @@
 
 **What to build:** A person types their email address, receives a six-digit code, types it in, and arrives at their dashboard. It is empty, because they have no Calendars yet.
 
-There are no passwords, and deliberately no Google or GitHub sign-in. Only Curators have accounts; Contributors never will.
+There are no passwords, and deliberately no Google or GitHub sign-in. (Later superseded in part: a Curator may now set an optional password from the dashboard; the code still always works.) Only Curators have accounts; Contributors never will.
 
 **Blocked by:** 01, 05
 

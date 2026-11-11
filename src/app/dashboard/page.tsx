@@ -1,21 +1,28 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getCurator } from '@/lib/auth';
+import { getCurator, MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from '@/lib/auth';
 import { listCalendars } from '@/lib/calendars';
 import { signOutAction } from '@/app/sign-in/actions';
+import { setPasswordAction } from './actions';
 import { Occupancy } from '@/app/submit/Occupancy';
 
 const pill = 'rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-medium text-zinc-50 hover:opacity-90';
 
+const PASSWORD_MESSAGES: Record<string, string> = {
+  ok: 'Password saved. You can sign in with it or with a code.',
+  short: `That password is too short. Use at least ${MIN_PASSWORD_LENGTH} characters.`,
+  long: `That password is too long. Use at most ${MAX_PASSWORD_LENGTH} characters.`,
+};
+
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ taken?: string }>;
+  searchParams: Promise<{ taken?: string; passwordSet?: string }>;
 }) {
   const curator = await getCurator();
   if (!curator) redirect('/sign-in');
 
-  const [{ taken }, calendars] = await Promise.all([searchParams, listCalendars(curator.id)]);
+  const [{ taken, passwordSet }, calendars] = await Promise.all([searchParams, listCalendars(curator.id)]);
 
   return (
     <main className="min-h-dvh bg-[url('/light.webp')] bg-cover bg-fixed bg-center">
@@ -100,6 +107,43 @@ export default async function DashboardPage({
             ))}
           </ul>
         )}
+
+        <form
+          action={setPasswordAction}
+          className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/90 p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_8px_24px_rgba(0,0,0,.06)]"
+        >
+          <div className="flex flex-col gap-0.5">
+            <label htmlFor="password" className="text-lg font-medium">
+              {curator.hasPassword ? 'Change your password' : 'Set a password'}
+            </label>
+            <p className="text-sm text-zinc-500">
+              Optional. Sign in with it next time instead of waiting for a code — the code keeps
+              working too.
+            </p>
+          </div>
+          {passwordSet && PASSWORD_MESSAGES[passwordSet] && (
+            <p role="status" className="text-sm text-zinc-700">
+              {PASSWORD_MESSAGES[passwordSet]}
+            </p>
+          )}
+          <div className="flex flex-col gap-3 sm:flex-row">
+            {/* Lets password managers file the new password under the right account. */}
+            <input type="email" name="username" autoComplete="username" value={curator.email} readOnly hidden />
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={MIN_PASSWORD_LENGTH}
+              maxLength={MAX_PASSWORD_LENGTH}
+              className="w-full rounded-lg border border-zinc-300 px-3.5 py-2.5 text-base outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+            />
+            <button type="submit" className={`${pill} shrink-0`}>
+              Save password
+            </button>
+          </div>
+        </form>
       </div>
     </main>
   );

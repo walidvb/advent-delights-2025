@@ -16,7 +16,7 @@ const SESSION_COOKIE = 'curator_session';
 
 export type SignInFailure = 'email' | 'invalid' | 'expired' | 'locked';
 
-export type Curator = { id: string; email: string; isAdmin: boolean };
+export type Curator = { id: string; email: string; isAdmin: boolean; hasPassword: boolean };
 
 async function db() {
   const { env } = await getCloudflareContext({ async: true });
@@ -102,7 +102,7 @@ export async function requestSignInCode(rawEmail: string): Promise<'ok' | 'email
       subject: `${code} is your Advent Delights sign-in code`,
       ...renderEmail({
         title: 'Your Advent Delights sign-in code',
-        preheader: 'Good for 10 minutes. No password, ever.',
+        preheader: 'Good for 10 minutes.',
         blocks: [
           heading('Here’s your sign-in code'),
           paragraph('Type it on the sign-in page and you’re in.'),
@@ -157,33 +157,121 @@ export async function verifySignInCode(typed: string): Promise<'ok' | SignInFail
     return pending.attempts + 1 >= MAX_ATTEMPTS ? forget('locked') : 'invalid';
   }
 
+  // A code proves the inbox, so it also lifts a password lockout.
   const curator = await database
     .prepare(
       `insert into curators (id, email, created_at) values (?1, ?2, ?3)
-       on conflict (email) do update set email = excluded.email
+       on conflict (email) do update set password_failures = 0
        returning id`,
     )
     .bind(randomToken(), pending.email, Date.now())
     .first<{ id: string }>();
   if (!curator) throw new Error('curator upsert returned no row');
 
-  const token = randomToken();
-  await database.batch([
-    database.prepare('delete from sign_in_codes where id = ?1').bind(id),
-    database
-      .prepare('insert into sessions (id, curator_id, expires_at) values (?1, ?2, ?3)')
-      .bind(await sha256(token), curator.id, Date.now() + SESSION_TTL_MS),
-  ]);
-
+  // Session first: if it fails, the code is still unspent and can be retried.
+  await startSession(curator.id);
+  await database.prepare('delete from sign_in_codes where id = ?1').bind(id).run();
   jar.delete(PENDING_COOKIE);
-  jar.set(SESSION_COOKIE, token, {
+
+  return 'ok';
+}
+
+async function startSession(curatorId: string) {
+  const token = randomToken();
+  await (await db())
+    .prepare('insert into sessions (id, curator_id, expires_at) values (?1, ?2, ?3)')
+    .bind(await sha256(token), curatorId, Date.now() + SESSION_TTL_MS)
+    .run();
+
+  (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: 'lax',
     secure: true,
     path: '/',
     maxAge: SESSION_TTL_MS / 1000,
   });
+}
 
+/**
+ * ponytail: Cloudflare Workers caps PBKDF2 at 100,000 iterations, below current
+ * guidance for SHA-256. Fine for an advent calendar; move hashing off the
+ * Worker if these accounts ever guard anything worth more.
+ */
+const PBKDF2_ITERATIONS = 100_000;
+/** Wrong passwords before only a code will get that account in again. */
+const MAX_PASSWORD_FAILURES = 10;
+export const MIN_PASSWORD_LENGTH = 8;
+export const MAX_PASSWORD_LENGTH = 256;
+
+export type PasswordSignInFailure = 'mismatch' | 'password-locked';
+
+async function pbkdf2(password: string, salt: string, iterations: number) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, [
+    'deriveBits',
+  ]);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', hash: 'SHA-256', salt: new TextEncoder().encode(salt), iterations },
+    key,
+    256,
+  );
+  return hex(new Uint8Array(bits));
+}
+
+async function hashPassword(password: string) {
+  const salt = hex(crypto.getRandomValues(new Uint8Array(16)));
+  return `pbkdf2$${PBKDF2_ITERATIONS}$${salt}$${await pbkdf2(password, salt, PBKDF2_ITERATIONS)}`;
+}
+
+async function passwordMatches(password: string, stored: string) {
+  const [scheme, iterations, salt, hash] = stored.split('$');
+  return scheme === 'pbkdf2' && (await pbkdf2(password, salt, Number(iterations))) === hash;
+}
+
+/** Sets or replaces the signed-in Curator's password. */
+export async function setPassword(curatorId: string, password: string): Promise<'ok' | 'short' | 'long'> {
+  if (password.length < MIN_PASSWORD_LENGTH) return 'short';
+  if (password.length > MAX_PASSWORD_LENGTH) return 'long';
+
+  await (await db())
+    .prepare('update curators set password_hash = ?1, password_failures = 0 where id = ?2')
+    .bind(await hashPassword(password), curatorId)
+    .run();
+  return 'ok';
+}
+
+/**
+ * Signs in by email and password. An unknown address, an account with no
+ * password and a wrong password all answer 'mismatch'.
+ *
+ * ponytail: guessing is capped per account, not per caller. Anyone can lock a
+ * known address out of password sign-in (the owner signs in by code, which
+ * lifts it); a burst of parallel guesses can overshoot the cap a little; and
+ * response time shows which addresses have a password. Accepted for an advent
+ * calendar. Add a per-IP limit if any of it gets abused.
+ */
+export async function signInWithPassword(rawEmail: string, password: string): Promise<'ok' | PasswordSignInFailure> {
+  const email = normaliseEmail(rawEmail);
+  if (!email || !password) return 'mismatch';
+
+  const database = await db();
+  const curator = await database
+    .prepare('select id, password_hash, password_failures from curators where email = ?1')
+    .bind(email)
+    .first<{ id: string; password_hash: string | null; password_failures: number }>();
+
+  if (!curator?.password_hash) return 'mismatch';
+  if (curator.password_failures >= MAX_PASSWORD_FAILURES) return 'password-locked';
+
+  if (!(await passwordMatches(password, curator.password_hash))) {
+    await database
+      .prepare('update curators set password_failures = password_failures + 1 where id = ?1')
+      .bind(curator.id)
+      .run();
+    return curator.password_failures + 1 >= MAX_PASSWORD_FAILURES ? 'password-locked' : 'mismatch';
+  }
+
+  await database.prepare('update curators set password_failures = 0 where id = ?1').bind(curator.id).run();
+  await startSession(curator.id);
   return 'ok';
 }
 
@@ -212,14 +300,17 @@ export async function getCurator(): Promise<Curator | null> {
 
   const row = await (await db())
     .prepare(
-      `select curators.id as id, curators.email as email, curators.admin as admin
+      `select curators.id as id, curators.email as email, curators.admin as admin,
+              curators.password_hash is not null as has_password
          from sessions join curators on curators.id = sessions.curator_id
         where sessions.id = ?1 and sessions.expires_at > ?2`,
     )
     .bind(await sha256(token), Date.now())
-    .first<{ id: string; email: string; admin: number }>();
+    .first<{ id: string; email: string; admin: number; has_password: number }>();
 
-  return row ? { id: row.id, email: row.email, isAdmin: row.admin === 1 } : null;
+  return row
+    ? { id: row.id, email: row.email, isAdmin: row.admin === 1, hasPassword: row.has_password === 1 }
+    : null;
 }
 
 export async function signOut() {
