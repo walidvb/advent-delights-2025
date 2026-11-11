@@ -102,7 +102,7 @@ export async function requestSignInCode(rawEmail: string): Promise<'ok' | 'email
       subject: `${code} is your Advent Delights sign-in code`,
       ...renderEmail({
         title: 'Your Advent Delights sign-in code',
-        preheader: 'Good for 10 minutes. No password, ever.',
+        preheader: 'Good for 10 minutes.',
         blocks: [
           heading('Here’s your sign-in code'),
           paragraph('Type it on the sign-in page and you’re in.'),
