@@ -28,6 +28,14 @@ export async function sendEmail(message: {
 }): Promise<void> {
   const { env } = await getCloudflareContext({ async: true });
 
+  // Which key and sender this Worker actually holds, to tell a missing or stale
+  // secret apart from a refused message. Only the key's prefix and length are
+  // logged: the key itself must never reach the logs.
+  const key = env.RESEND_API_KEY;
+  console.log(
+    `[email] key=${key ? `${key.slice(0, 6)}… (${key.length} chars)` : 'missing'} from=${env.EMAIL_FROM ?? 'default'}`,
+  );
+
   if (!env.RESEND_API_KEY) {
     console.log(
       `[email] no RESEND_API_KEY, not sending. to=${message.to} subject=${message.subject}\n${message.text}`,
@@ -42,7 +50,7 @@ export async function sendEmail(message: {
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      from: env.EMAIL_FROM ?? 'onboarding@resend.dev',
+      from: env.EMAIL_FROM ?? 'hello@walidvb.com',
       ...message,
     }),
   });
