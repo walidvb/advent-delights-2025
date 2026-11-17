@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useActionState, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { CopyLink } from '@/app/dashboard/CopyLink';
+import { HowItWorks } from '../HowItWorks';
 import { Occupancy } from '../Occupancy';
 import { ContributorFields, TrackFields, button } from '../SubmissionFields';
 import { submitAction, type SubmitState } from '../actions';
@@ -139,34 +140,22 @@ function DealCard({
     );
   }
 
-  // Straight on the sky, with only the asks boxed so they don't get lost in it.
-  // The asks are plain lines, not pills: nothing here should look tappable but
-  // the button. Body font throughout — the script face isn't readable enough
-  // for instructions.
+  // The two asks as "Now" and what happens to them as "December", in one box
+  // on the sky. The disk only shows from sm up, beside the box: on a phone it
+  // took a screen's worth of height for nothing. Body font throughout — the
+  // script face isn't readable enough for instructions.
   return (
     <div className="flex flex-col items-center gap-6 py-4 text-center">
-      {/* eslint-disable-next-line @next/next/no-img-element -- a static decoration */}
-      <img
-        src="/angel-disk.webp"
-        alt=""
-        width={160}
-        height={160}
-        className="animate-[spin_12s_linear_infinite] drop-shadow-xl motion-reduce:animate-none"
-      />
-      <div className="flex flex-col items-center gap-3">
-        <h2 className="text-2xl font-medium text-zinc-900">
-          Choose {view.variants.length} tracks you like
-        </h2>
-        <ul className="mt-1 flex flex-col items-center gap-2 rounded-2xl border border-white/80 bg-white/80 px-8 py-5 text-xl text-zinc-900 shadow-[0_10px_30px_rgba(0,0,0,.08)] backdrop-blur">
-          {view.variants.map(({ variant, label }) => (
-            <li key={variant} className="flex items-center gap-3">
-              <span className="text-2xl text-zinc-500" aria-hidden>
-                {ASKS[variant]?.icon ?? '♪'}
-              </span>
-              1 {ASKS[variant]?.ask ?? label.toLowerCase()}
-            </li>
-          ))}
-        </ul>
+      <div className="flex w-full items-center gap-8">
+        {/* eslint-disable-next-line @next/next/no-img-element -- a static decoration */}
+        <img
+          src="/angel-disk.webp"
+          alt=""
+          width={160}
+          height={160}
+          className="hidden shrink-0 animate-[spin_12s_linear_infinite] drop-shadow-xl motion-reduce:animate-none sm:block"
+        />
+        <HowItWorks variants={view.variants} totalDays={view.totalDays} asks={ASKS} />
       </div>
       <button type="button" onClick={onDeal} className={`${button} rounded-full px-10 py-4 text-base`}>
         Next

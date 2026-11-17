@@ -1,0 +1,69 @@
+/* One 8s loop shared by every piece, so they stay in step:
+   0–47% "Now" in focus · 48–62% the icons fly into the Day ·
+   63–72% the Days before it reveal in order · 77–94% the Day opens. */
+
+.now { animation: focusNow 8s infinite; }
+.december { animation: focusDecember 8s infinite; }
+@keyframes focusNow { 0%, 46% { opacity: 1 } 50%, 96% { opacity: .38 } 100% { opacity: 1 } }
+@keyframes focusDecember { 0%, 46% { opacity: .38 } 50%, 96% { opacity: 1 } 100% { opacity: .38 } }
+
+/* The ask's own icon fades while its copy is away. */
+.askIcon { animation: askAway 8s infinite; }
+@keyframes askAway { 0%, 47% { opacity: 1 } 49%, 97% { opacity: .18 } 100% { opacity: 1 } }
+
+.fly {
+  position: absolute; left: 0; top: 0; z-index: 5;
+  width: 20px; height: 20px; display: grid; place-items: center;
+  font-size: 15px; color: #3f3f46; pointer-events: none; opacity: 0;
+  animation: fly 8s infinite cubic-bezier(.55, 0, .35, 1);
+}
+.fly + .fly { animation-delay: .12s; }
+@keyframes fly {
+  0%, 47% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(1) }
+  48% { opacity: 1; transform: translate(var(--sx), var(--sy)) scale(1) }
+  51% { opacity: 1; transform: translate(var(--sx), calc(var(--sy) - 10px)) scale(1.2) }
+  60% { opacity: 1; transform: translate(var(--cx), var(--cy)) scale(.55) }
+  62% { opacity: 0; transform: translate(var(--cx), var(--cy)) scale(.2) }
+  74% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(.4) }
+  78%, 94% { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(.72) }
+  98%, 100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(.72) }
+}
+
+.grid { position: relative; flex: none; display: grid; grid-template-columns: repeat(7, 16px); gap: 3px; }
+.grid i {
+  width: 16px; height: 16px; border-radius: 3px; background: rgb(24 24 27 / .1);
+  display: grid; place-items: center; font-style: normal; font-size: 8px; font-weight: 600;
+  line-height: 1; color: transparent; font-variant-numeric: tabular-nums;
+}
+.grid .blank { background: none; }
+/* Only the first two weeks matter; the rest of the month trails off. */
+.grid .fade { opacity: .45; }
+.grid .faint { opacity: .15; }
+
+/* Each Day before yours reveals in order and shows its number. */
+.before { animation: reveal 8s infinite; animation-delay: calc(var(--i) * 70ms); }
+@keyframes reveal {
+  0%, 63% { background: rgb(24 24 27 / .1); color: transparent; transform: scale(1) }
+  64.5% { background: rgb(24 24 27 / .62); color: #fff; transform: scale(1.15) }
+  66%, 95% { background: rgb(24 24 27 / .5); color: #fff; transform: scale(1) }
+  100% { background: rgb(24 24 27 / .1); color: transparent }
+}
+
+.grid .yours { position: relative; z-index: 2; background: #18181b; animation: yours 8s infinite; }
+@keyframes yours {
+  0%, 58% { transform: scale(1); background: #18181b; box-shadow: none }
+  61% { transform: scale(1.5); background: #18181b }
+  64%, 73% { transform: scale(1.15); background: #18181b }
+  77% { transform: scale(2.7); background: #fff; box-shadow: 0 0 0 1.5px #18181b, 0 4px 10px rgb(30 50 90 / .25) }
+  80%, 94% { transform: scale(2.4); background: #fff; box-shadow: 0 0 0 1.5px #18181b, 0 4px 10px rgb(30 50 90 / .25) }
+  100% { transform: scale(1) }
+}
+
+.note { position: absolute; top: 30%; z-index: 3; font-size: 13px; color: #27304a; opacity: 0; animation: note 8s infinite; }
+.note + .note { animation-delay: .35s; }
+@keyframes note { 0%, 79% { opacity: 0; transform: translateY(0) } 83% { opacity: 1 } 95%, 100% { opacity: 0; transform: translateY(-34px) } }
+
+/* Still: both rows readable, no flight, the Day shown as a plain dark square. */
+@media (prefers-reduced-motion: reduce) {
+  .now, .december, .askIcon, .fly, .before, .grid .yours, .note { animation: none; }
+}
