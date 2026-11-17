@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useRef, type CSSProperties } from 'react';
+import { useImperativeHandle, useLayoutEffect, useRef, type CSSProperties, type Ref } from 'react';
 import type { Variant } from '@/lib/submissions';
 import styles from './HowItWorks.module.css';
 
@@ -20,16 +20,44 @@ import styles from './HowItWorks.module.css';
 const LEAD = 1;
 const YOURS = 10;
 
+/** The loop's length, and where focus leaves "Now" (the CSS module's 47%). */
+const LOOP_MS = 8000;
+const DECEMBER_AT_MS = LOOP_MS * 0.47;
+
+export type HowItWorksHandle = {
+  /**
+   * Called by Next. While "Now" has focus, jumps the loop to December and
+   * returns true, so Next doesn't leave before the Contributor has seen where
+   * their tracks go. Returns false once December has focus, or when nothing
+   * animates (reduced motion), and Next goes on.
+   */
+  showDecember(): boolean;
+};
+
 export function HowItWorks({
   variants,
   totalDays,
   asks,
+  ref,
 }: {
   variants: Variant[];
   totalDays: number;
   asks: Record<string, { icon: string; ask: string }>;
+  ref?: Ref<HowItWorksHandle>;
 }) {
   const box = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    showDecember() {
+      const animations = box.current?.getAnimations({ subtree: true }) ?? [];
+      // Every piece started together, so one clock speaks for all of them.
+      const clock = Number(animations[0]?.currentTime ?? NaN);
+      if (Number.isNaN(clock) || clock % LOOP_MS >= DECEMBER_AT_MS) return false;
+      // Same time on every piece keeps each one's own delay relative to the rest.
+      for (const animation of animations) animation.currentTime = DECEMBER_AT_MS;
+      return true;
+    },
+  }));
 
   // Aim each flying icon from its ask to the Day. offsetLeft/Top ignore the
   // running transforms, so measuring mid-animation is safe.
@@ -104,8 +132,8 @@ export function HowItWorks({
       <div className={`${styles.december} flex items-center justify-between gap-4 border-t border-zinc-900/10 px-5 py-4`}>
         <div className="flex min-w-0 flex-col gap-1">
           <span className="text-[11px] font-semibold uppercase tracking-[.16em] text-zinc-600">December</span>
-          <p className="text-lg font-medium leading-tight">Others reveal them</p>
-          <p className="text-sm text-zinc-600">On your day, the calendar opens them for everyone to listen.</p>
+          <p className="text-lg font-medium leading-tight">Wait until your day</p>
+          <p className="text-sm text-zinc-600">Your tracks will be revealed for all to listen.</p>
         </div>
         <div aria-hidden className={styles.grid}>
           <i className={styles.blank} />

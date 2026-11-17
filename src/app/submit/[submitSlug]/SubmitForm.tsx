@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useActionState, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { CopyLink } from '@/app/dashboard/CopyLink';
-import { HowItWorks } from '../HowItWorks';
+import { HowItWorks, type HowItWorksHandle } from '../HowItWorks';
 import { Occupancy } from '../Occupancy';
 import { ContributorFields, TrackFields, button } from '../SubmissionFields';
 import { submitAction, type SubmitState } from '../actions';
@@ -116,6 +116,7 @@ function DealCard({
   full: boolean;
   onDeal: () => void;
 }) {
+  const howItWorks = useRef<HowItWorksHandle>(null);
   const opened = view.revealedCount;
   const claimedUnrevealed = Math.max(0, view.totalDays - opened - view.claimableCount);
   const everythingOpened = opened >= view.totalDays;
@@ -155,9 +156,13 @@ function DealCard({
           height={160}
           className="hidden shrink-0 animate-[spin_12s_linear_infinite] drop-shadow-xl motion-reduce:animate-none sm:block"
         />
-        <HowItWorks variants={view.variants} totalDays={view.totalDays} asks={ASKS} />
+        <HowItWorks ref={howItWorks} variants={view.variants} totalDays={view.totalDays} asks={ASKS} />
       </div>
-      <button type="button" onClick={onDeal} className={`${button} rounded-full px-10 py-4 text-base`}>
+      <button
+        type="button"
+        onClick={() => howItWorks.current?.showDecember() || onDeal()}
+        className={`${button} rounded-full px-10 py-4 text-base`}
+      >
         Next
       </button>
       <span className="text-xs text-zinc-700">
