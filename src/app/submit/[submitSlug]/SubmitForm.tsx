@@ -10,7 +10,7 @@ import type { SubmissionDraft, SubmitView } from '@/lib/submissions';
 
 /**
  * Being dealt a Day, and the three-step wizard that follows: the Track to
- * soothe the mind, then the one to get funky, then who to credit. Nothing here is claimed until
+ * soothe the mind, then the one to move your feet, then who to credit. Nothing here is claimed until
  * the last step is sent — up to then this is all just typing, held in the
  * fields' own state, and a lost race (the deal collides with somebody else's)
  * costs nothing because nothing was written yet.
@@ -119,10 +119,10 @@ function DealCard({
   const claimedUnrevealed = Math.max(0, view.totalDays - opened - view.claimableCount);
   const everythingOpened = opened >= view.totalDays;
 
-  return (
-    <div className="flex flex-col items-center gap-6 rounded-2xl border border-white/70 bg-white/95 p-8 text-center shadow-[0_16px_44px_rgba(0,0,0,.12)]">
-      <Occupancy total={view.totalDays} opened={opened} claimed={claimedUnrevealed} />
-      {full ? (
+  if (full) {
+    return (
+      <div className="flex flex-col items-center gap-6 rounded-2xl border border-white/70 bg-white/95 p-8 text-center shadow-[0_16px_44px_rgba(0,0,0,.12)]">
+        <Occupancy total={view.totalDays} opened={opened} claimed={claimedUnrevealed} />
         <div className="flex flex-col gap-2">
           <h2 className="font-title text-2xl font-light">
             {everythingOpened
@@ -135,22 +135,45 @@ function DealCard({
               : 'All 25 are out. Nothing left to deal — but the calendar still opens on schedule.'}
           </p>
         </div>
-      ) : (
-        <>
-          <div className="flex flex-col gap-2">
-            <h2 className="font-title text-2xl font-light">Leave two recommendations</h2>
-            <p className="max-w-sm text-sm text-muted-foreground">
-              One to soothe the mind, one to get funky.
-            </p>
-          </div>
-          <button type="button" onClick={onDeal} className={`${button} rounded-full px-8 py-3.5`}>
-            Deal me a day
-          </button>
-          <span className="text-sm text-muted-foreground">
-            {view.claimedCount} of {view.totalDays} days taken · {view.claimableCount} still going
-          </span>
-        </>
-      )}
+      </div>
+    );
+  }
+
+  // Straight on the sky, with only the asks boxed so they don't get lost in it.
+  // The asks are plain lines, not pills: nothing here should look tappable but
+  // the button. Body font throughout — the script face isn't readable enough
+  // for instructions.
+  return (
+    <div className="flex flex-col items-center gap-6 py-4 text-center">
+      {/* eslint-disable-next-line @next/next/no-img-element -- a static decoration */}
+      <img
+        src="/angel-disk.webp"
+        alt=""
+        width={160}
+        height={160}
+        className="animate-[spin_12s_linear_infinite] drop-shadow-xl motion-reduce:animate-none"
+      />
+      <div className="flex flex-col items-center gap-3">
+        <h2 className="text-2xl font-medium text-zinc-900">
+          Choose {view.variants.length} tracks you like
+        </h2>
+        <ul className="mt-1 flex flex-col items-center gap-2 rounded-2xl border border-white/80 bg-white/80 px-8 py-5 text-xl text-zinc-900 shadow-[0_10px_30px_rgba(0,0,0,.08)] backdrop-blur">
+          {view.variants.map(({ variant, label }) => (
+            <li key={variant} className="flex items-center gap-3">
+              <span className="text-2xl text-zinc-500" aria-hidden>
+                {ASKS[variant]?.icon ?? '♪'}
+              </span>
+              1 {ASKS[variant]?.ask ?? label.toLowerCase()}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <button type="button" onClick={onDeal} className={`${button} rounded-full px-10 py-4 text-base`}>
+        Next
+      </button>
+      <span className="text-xs text-zinc-700">
+        {view.claimableCount} of {view.totalDays} days still up for grabs
+      </span>
     </div>
   );
 }
@@ -159,9 +182,9 @@ function DealCard({
  * What each Variant's recommendation is for, in the words a Contributor is
  * asked in. Keyed by Variant rather than its stored label, which is unused.
  */
-const ASKS: Record<string, string> = {
-  light: 'one to soothe the mind',
-  heavy: 'one to get funky',
+const ASKS: Record<string, { icon: string; ask: string }> = {
+  light: { icon: '☾', ask: 'to soothe the mind' },
+  heavy: { icon: '✺', ask: 'to move your feet' },
 };
 
 function Wizard({
@@ -202,9 +225,11 @@ function Wizard({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/70 bg-white/70 px-5 py-3 backdrop-blur">
         <span className="text-sm text-muted-foreground">
-          {step <= view.variants.length ? 'A day is yours' : 'And you'}
+          {step <= view.variants.length
+            ? "Your tracks will be revealed in December, you don't know when exactly."
+            : 'And you'}
         </span>
-        <span className="font-mono text-xs text-muted-foreground">
+        <span className="shrink-0 whitespace-nowrap font-mono text-xs text-muted-foreground">
           Step {step} of {totalSteps}
         </span>
       </div>
@@ -233,7 +258,7 @@ function Wizard({
               <span key={v.variant}>
                 {j > 0 && ', '}
                 <span className={j === i ? 'font-medium text-foreground' : ''}>
-                  {ASKS[v.variant] ?? v.label.toLowerCase()}
+                  one {ASKS[v.variant]?.ask ?? v.label.toLowerCase()}
                 </span>
               </span>
             ))}
