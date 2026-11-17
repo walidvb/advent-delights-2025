@@ -9,8 +9,8 @@ import { submitAction, type SubmitState } from '../actions';
 import type { SubmissionDraft, SubmitView } from '@/lib/submissions';
 
 /**
- * Being dealt a Day, and the three-step wizard that follows: the mellow Track,
- * then the energetic one, then who to credit. Nothing here is claimed until
+ * Being dealt a Day, and the three-step wizard that follows: the Track to
+ * soothe the mind, then the one to get funky, then who to credit. Nothing here is claimed until
  * the last step is sent — up to then this is all just typing, held in the
  * fields' own state, and a lost race (the deal collides with somebody else's)
  * costs nothing because nothing was written yet.
@@ -56,10 +56,6 @@ export function SubmitForm({ view }: { view: SubmitView }) {
     return (
       <section className="flex flex-col items-center gap-4 rounded-2xl border border-white/70 bg-white/95 p-8 text-center shadow-[0_10px_30px_rgba(0,0,0,.12)]">
         <h2 className="font-title text-3xl font-light">Your day is dealt.</h2>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Two tracks, sealed behind a Day in December. We&apos;re not telling you which one — you
-          get to be surprised too.
-        </p>
         <div className="flex w-full flex-col gap-2 rounded-xl border-2 border-primary bg-background p-4 text-left">
           <CopyLink label="Your edit link" hint="keep this" url={absolute(state.claimed.editPath)} />
           <p className="text-xs text-muted-foreground">
@@ -142,10 +138,9 @@ function DealCard({
       ) : (
         <>
           <div className="flex flex-col gap-2">
-            <h2 className="font-title text-2xl font-light">We&apos;ll deal you a day.</h2>
+            <h2 className="font-title text-2xl font-light">Leave two recommendations</h2>
             <p className="max-w-sm text-sm text-muted-foreground">
-              Which one is a surprise — you won&apos;t be told, and neither will anyone else. Just
-              leave two tracks and let December do the rest.
+              One to soothe the mind, one to get funky.
             </p>
           </div>
           <button type="button" onClick={onDeal} className={`${button} rounded-full px-8 py-3.5`}>
@@ -160,7 +155,14 @@ function DealCard({
   );
 }
 
-const STEP_LABELS = ['The mellow one', 'The energetic one', 'And you'];
+/**
+ * What each Variant's recommendation is for, in the words a Contributor is
+ * asked in. Keyed by Variant rather than its stored label, which is unused.
+ */
+const ASKS: Record<string, string> = {
+  light: 'one to soothe the mind',
+  heavy: 'one to get funky',
+};
 
 function Wizard({
   view,
@@ -200,7 +202,7 @@ function Wizard({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/70 bg-white/70 px-5 py-3 backdrop-blur">
         <span className="text-sm text-muted-foreground">
-          {step <= view.variants.length ? 'A day is yours' : STEP_LABELS[STEP_LABELS.length - 1]}
+          {step <= view.variants.length ? 'A day is yours' : 'And you'}
         </span>
         <span className="font-mono text-xs text-muted-foreground">
           Step {step} of {totalSteps}
@@ -224,6 +226,19 @@ function Wizard({
           hidden={step !== i + 1}
           className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/95 p-6 shadow-[0_10px_30px_rgba(0,0,0,.08)]"
         >
+          {/* The ask, again, with this step's half of it picked out. */}
+          <p className="text-sm text-muted-foreground">
+            Two recommendations:{' '}
+            {view.variants.map((v, j) => (
+              <span key={v.variant}>
+                {j > 0 && ', '}
+                <span className={j === i ? 'font-medium text-foreground' : ''}>
+                  {ASKS[v.variant] ?? v.label.toLowerCase()}
+                </span>
+              </span>
+            ))}
+            .
+          </p>
           <TrackFields variant={variant} label={label} track={undefined} auth={{ submit_slug: view.submitSlug }} />
         </div>
       ))}
@@ -264,9 +279,6 @@ function Wizard({
             {pending ? 'Sealing…' : 'Seal my day'}
           </button>
         )}
-        <span className="text-xs text-muted-foreground">
-          Nobody sees this until your day opens — not even the curator, and not even you.
-        </span>
       </div>
     </div>
   );

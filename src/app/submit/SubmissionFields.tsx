@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { lookupTrackAction, uploadCoverAction } from './actions';
+import { TrackPreview } from './TrackPreview';
 import { COVER_TYPES, coverPath, coverProblem, resizeCover } from '@/lib/covers';
 import type { ReleaseTrack } from '@/lib/media';
 import type { SubmissionDraft, TrackDraft, Variant } from '@/lib/submissions';
@@ -207,6 +208,11 @@ export function TrackFields({
     };
   }, [values.url, track?.providerTrackId]);
 
+  // The picked track's stream, or — on the edit form, before any lookup — the stored one.
+  const previewStream =
+    release.find((t) => t.id === trackId)?.streamUrl ??
+    (trackId && trackId === track?.providerTrackId ? track.streamUrl || null : null);
+
   const set = (key: keyof Prefillable) => (event: { target: { value: string } }) =>
     setValues((current) => ({ ...current, [key]: event.target.value }));
 
@@ -291,6 +297,8 @@ export function TrackFields({
           : problem ||
             'Paste a Bandcamp, SoundCloud or YouTube link and the name, artist and artwork fill themselves in. Correct the name or artist if they get it wrong.'}
       </p>
+
+      <TrackPreview url={values.url} streamUrl={previewStream} />
 
       {release.length > 1 ? (
         <>

@@ -30,7 +30,14 @@ async function db() {
 }
 
 /** One track of a Bandcamp release, as the form's picker offers it. */
-export type ReleaseTrack = { id: string; title: string; artist: string; playable: boolean };
+export type ReleaseTrack = {
+  id: string;
+  title: string;
+  artist: string;
+  playable: boolean;
+  /** What the form's preview plays. Never submitted: the stored one is read again on the server. */
+  streamUrl: string | null;
+};
 
 /**
  * What a lookup can offer the form. Any text field may be empty; the
@@ -88,6 +95,7 @@ export async function lookupTrack(raw: string): Promise<TrackLookup | null> {
       // A compilation credits each track to its own artist.
       artist: t.artist ?? release.artist,
       playable: !!t.streamUrl,
+      streamUrl: t.streamUrl ?? null,
     })),
     trackId: release.defaultTrackId ?? undefined,
   };

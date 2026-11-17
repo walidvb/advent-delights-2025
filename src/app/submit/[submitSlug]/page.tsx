@@ -23,14 +23,7 @@ export default async function SubmitPage({
       <div className="flex w-full max-w-xl flex-col items-center gap-8">
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="font-title text-4xl italic font-light sm:text-5xl">{view.calendarName}</h1>
-          <p className="text-sm text-zinc-700">
-            Take a day, give it two tracks. No account, nothing to sign up for.
-          </p>
         </div>
-        <p className="max-w-sm text-center text-sm text-zinc-700">
-          You won&apos;t see what anyone else has put in — only roughly how full the Calendar is.
-          December should still be a surprise for you too.
-        </p>
         <div className="w-full">
           <SubmitForm view={view} />
         </div>
