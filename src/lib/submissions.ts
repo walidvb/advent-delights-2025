@@ -52,6 +52,8 @@ export type SubmitView = {
   claimableCount: number;
   /** Days that have opened for good and can never be dealt again. */
   revealedCount: number;
+  /** The same Curator's Calendar from the year before, if they made one. */
+  lastYearSlug: string | null;
 };
 
 /** One Contributor's typed answers, normalised but not yet claimed. */
@@ -205,10 +207,19 @@ async function readVariants(calendarId: string): Promise<Variant[]> {
  */
 export async function getSubmitView(submitSlug: string): Promise<SubmitView | null> {
   const calendar = await (await db())
-    .prepare('select id, name, slug, year from calendars where submit_slug = ?1')
+    .prepare('select id, curator_id, name, slug, year from calendars where submit_slug = ?1')
     .bind(submitSlug)
-    .first<{ id: string; name: string; slug: string; year: number }>();
+    .first<{ id: string; curator_id: string; name: string; slug: string; year: number }>();
   if (!calendar) return null;
+
+  // A Slug is a name, not a secret, so pointing at it gives nothing away —
+  // whether or not that Calendar is Public.
+  const lastYear = await (await db())
+    .prepare(
+      'select slug from calendars where curator_id = ?1 and year = ?2 order by created_at desc limit 1',
+    )
+    .bind(calendar.curator_id, calendar.year - 1)
+    .first<{ slug: string }>();
 
   // Day only — never credited_to, and nothing from `tracks`. This page has no
   // use for who claimed what, only how many.
@@ -228,6 +239,7 @@ export async function getSubmitView(submitSlug: string): Promise<SubmitView | nu
     claimedCount: claimedDays.size,
     claimableCount: claimable.filter((day) => !claimedDays.has(day)).length,
     revealedCount: revealedDayCount(calendar.year, new Date()),
+    lastYearSlug: lastYear?.slug ?? null,
   };
 }
 

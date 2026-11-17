@@ -23,6 +23,16 @@ export default async function SubmitPage({
       <div className="flex w-full max-w-xl flex-col items-center gap-8">
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="font-title text-4xl italic font-light sm:text-5xl">{view.calendarName}</h1>
+          {view.lastYearSlug && (
+            <a
+              href={`/calendar/${view.lastYearSlug}`}
+              target="_blank"
+              rel="noopener"
+              className="text-sm text-zinc-700 underline underline-offset-4 hover:text-zinc-900"
+            >
+              See last year&apos;s calendar ↗
+            </a>
+          )}
         </div>
         <div className="w-full">
           <SubmitForm view={view} />
