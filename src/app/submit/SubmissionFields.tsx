@@ -424,7 +424,7 @@ export function TrackFields({
       />
 
       <label htmlFor={`${variant}.buy_link`} className="text-sm">
-        Where to buy it {optional}
+        Link to buy it
       </label>
       <input
         id={`${variant}.buy_link`}
