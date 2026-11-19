@@ -430,7 +430,7 @@ export function TrackFields({
         id={`${variant}.buy_link`}
         name={`${variant}.buy_link`}
         defaultValue={track?.buyLink ?? ''}
-        placeholder="the artist's Bandcamp, ideally"
+        placeholder="https://artist.bandcamp.com/track/…"
         className={field}
       />
     </fieldset>
