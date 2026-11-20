@@ -7,7 +7,8 @@ import { SpinningDisk } from './SpinningDisk';
 interface AboutSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  contributors: Contributor[];
+  /** Null on a Self-filled Calendar: no Contributors section at all. */
+  contributors: Contributor[] | null;
 }
 
 export function AboutSidebar({
@@ -53,30 +54,34 @@ export function AboutSidebar({
               why this one is better!
             </p>
 
-            <h3 className="text-lg font-semibold mb-3">Contributors</h3>
+            {contributors && (
+              <>
+                <h3 className="text-lg font-semibold mb-3">Contributors</h3>
 
-            <p className="text-zinc-600 leading-relaxed">
-              A huge thanks to our old and new friends for their contributions,
-              and for sharing their passion for music with us. <br />
-              {contributors.map((contributor, index) => (
-                <span key={contributor.name}>
-                  {index > 0 && ', '}
-                  {contributor.link ? (
-                    <a
-                      href={contributor.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-teal-600 hover:text-teal-700 hover:underline"
-                    >
-                      {contributor.name}
-                    </a>
-                  ) : (
-                    <span>{contributor.name}</span>
-                  )}
-                </span>
-              ))}{' '}
-              and more to be revealed soon!
-            </p>
+                <p className="text-zinc-600 leading-relaxed">
+                  A huge thanks to our old and new friends for their contributions,
+                  and for sharing their passion for music with us. <br />
+                  {contributors.map((contributor, index) => (
+                    <span key={contributor.name}>
+                      {index > 0 && ', '}
+                      {contributor.link ? (
+                        <a
+                          href={contributor.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-teal-600 hover:text-teal-700 hover:underline"
+                        >
+                          {contributor.name}
+                        </a>
+                      ) : (
+                        <span>{contributor.name}</span>
+                      )}
+                    </span>
+                  ))}{' '}
+                  and more to be revealed soon!
+                </p>
+              </>
+            )}
 
             <div className="grow"></div>
 

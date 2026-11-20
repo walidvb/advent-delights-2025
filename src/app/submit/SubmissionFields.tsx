@@ -43,14 +43,7 @@ export type UploadAuth = { submit_slug: string } | { edit_token: string };
  * first, alongside everything else, since there is no wizard once a Day is
  * already yours.
  */
-export function ContributorFields({
-  draft,
-  withEmail = true,
-}: {
-  draft: SubmissionDraft;
-  /** Off for a Curator filling their own Calendar, who needs no edit link mailed. */
-  withEmail?: boolean;
-}) {
+export function ContributorFields({ draft }: { draft: SubmissionDraft }) {
   return (
     <>
       <label htmlFor="credited_to" className="text-sm">
@@ -77,25 +70,21 @@ export function ContributorFields({
         className={field}
       />
 
-      {withEmail && (
-        <>
-          <label htmlFor="email" className="text-sm">
-            Your email address {optional}
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            defaultValue={draft.email}
-            placeholder="you@example.com"
-            className={field}
-          />
-          <p className="-mt-1 text-xs text-muted-foreground">
-            Only ever used to send you your edit link, so you don&apos;t lose it. Leave it empty and
-            you&apos;ll get the link on screen instead.
-          </p>
-        </>
-      )}
+      <label htmlFor="email" className="text-sm">
+        Your email address {optional}
+      </label>
+      <input
+        id="email"
+        name="email"
+        type="email"
+        defaultValue={draft.email}
+        placeholder="you@example.com"
+        className={field}
+      />
+      <p className="-mt-1 text-xs text-muted-foreground">
+        Only ever used to send you your edit link, so you don&apos;t lose it. Leave it empty and
+        you&apos;ll get the link on screen instead.
+      </p>
     </>
   );
 }
@@ -104,16 +93,14 @@ export function SubmissionFields({
   variants,
   draft,
   auth,
-  withEmail,
 }: {
   variants: Variant[];
   draft: SubmissionDraft;
   auth: UploadAuth;
-  withEmail?: boolean;
 }) {
   return (
     <>
-      <ContributorFields draft={draft} withEmail={withEmail} />
+      <ContributorFields draft={draft} />
       {variants.map(({ variant, label }) => (
         // Absent for a Variant nobody has filled in yet, which is the blank form.
         <TrackFields

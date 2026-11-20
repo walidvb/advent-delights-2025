@@ -168,9 +168,12 @@ function CardContent({
         {description}
       </p>
 
-      <p className="text-[16px] font-bold text-right tracking-[-0.64px] text-black">
-        Submitted by: {creditedTo}
-      </p>
+      {/* Empty on a Self-filled Calendar, which credits nobody. */}
+      {creditedTo && (
+        <p className="text-[16px] font-bold text-right tracking-[-0.64px] text-black">
+          Submitted by: {creditedTo}
+        </p>
+      )}
     </>
   );
 }

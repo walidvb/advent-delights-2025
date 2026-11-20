@@ -94,7 +94,13 @@ export async function fillDayAction(previous: FillState, formData: FormData): Pr
   const target = await getDayToFill(id, curator.id, day);
   if (!target) return { attempt, error: 'This Calendar is not one you fill yourself.' };
 
-  const draft = readDraft(formData, target.variants);
+  // The form carries Tracks only; who is credited comes from the Day itself.
+  const draft = {
+    ...readDraft(formData, target.variants),
+    creditedTo: target.draft.creditedTo,
+    link: target.draft.link,
+    email: target.draft.email,
+  };
   const problem =
     draftProblem(draft, target.variants) ?? (await resolveTracks(draft.tracks, target.variants));
   if (problem) return { attempt, error: problem, draft };

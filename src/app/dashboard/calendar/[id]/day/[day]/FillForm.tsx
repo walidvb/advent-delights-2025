@@ -1,13 +1,13 @@
 'use client';
 
 import { useActionState } from 'react';
-import { SubmissionFields, button } from '@/app/submit/SubmissionFields';
+import { TrackFields, button } from '@/app/submit/SubmissionFields';
 import { fillDayAction, type FillState } from '@/app/dashboard/actions';
 import type { SubmissionDraft, Variant } from '@/lib/submissions';
 
 /**
- * One Day of a self-filled Calendar, filled in by its Curator. The same fields
- * a Contributor sees, all on one page, with two ways out: save and go back to
+ * One Day of a self-filled Calendar, filled in by its Curator: just the Tracks,
+ * since a Self-filled Calendar credits nobody. All on one page, with two ways out: save and go back to
  * the grid, or save and go straight on to the following Day.
  *
  * A refused save keeps what was typed, exactly as the edit form does. The page
@@ -36,12 +36,15 @@ export function FillForm({
       <input type="hidden" name="id" value={calendarId} />
       <input type="hidden" name="day" value={day} />
 
-      <SubmissionFields
-        variants={variants}
-        draft={state.draft ?? draft}
-        auth={{ submit_slug: submitSlug }}
-        withEmail={false}
-      />
+      {variants.map(({ variant, label }) => (
+        <TrackFields
+          key={variant}
+          variant={variant}
+          label={label}
+          track={(state.draft ?? draft).tracks[variant]}
+          auth={{ submit_slug: submitSlug }}
+        />
+      ))}
 
       {state.error && (
         <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">

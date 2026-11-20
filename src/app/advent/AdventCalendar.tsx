@@ -13,7 +13,8 @@ import { useAdventDay } from './AdventDayContext';
 interface AdventCalendarProps {
   year: number;
   days: Day[];
-  contributors: Contributor[];
+  /** Null on a Self-filled Calendar, which credits nobody. */
+  contributors: Contributor[] | null;
 }
 
 export function AdventCalendar({ year, days, contributors }: AdventCalendarProps) {

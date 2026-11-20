@@ -127,11 +127,21 @@ export async function deleteSubmission(calendarId: string, day: number): Promise
   await purgeCalendarPayload(calendar.slug);
 }
 
-/** Turns a Calendar's self-filled flag on or off, whoever curates it. */
+/**
+ * Turns a Calendar's self-filled flag on or off, whoever curates it. Purges
+ * the payload, which drops its credits while the flag is on.
+ */
 export async function setSelfFilled(id: string, selfFilled: boolean): Promise<void> {
   await requireAdmin();
-  await (await db())
+  const database = await db();
+  const calendar = await database
+    .prepare('select slug from calendars where id = ?1')
+    .bind(id)
+    .first<{ slug: string }>();
+  if (!calendar) return;
+  await database
     .prepare('update calendars set self_filled = ?2 where id = ?1')
     .bind(id, selfFilled ? 1 : 0)
     .run();
+  await purgeCalendarPayload(calendar.slug);
 }

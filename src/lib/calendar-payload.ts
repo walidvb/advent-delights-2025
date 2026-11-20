@@ -21,7 +21,12 @@ export type CalendarPayload = {
   /** Not Public: the page still loads for anyone holding the Slug, but is not indexed. */
   isPublic: boolean;
   days: Day[];
-  contributors: Contributor[];
+  /**
+   * Null on a Self-filled Calendar, which credits nobody: one person filled
+   * every Day, so the names are left out of the payload altogether rather than
+   * shipped and hidden.
+   */
+  contributors: Contributor[] | null;
 };
 
 /** The cache holds the payload for a year; writes purge it long before that. */
@@ -61,6 +66,7 @@ type TrackRow = {
   slug: string;
   year: number;
   is_public: number;
+  self_filled: number;
   day: number | null;
   credited_to: string | null;
   link: string | null;
@@ -84,7 +90,7 @@ type TrackRow = {
 async function readCalendar(slug: string): Promise<CalendarPayload | null> {
   const { env } = await getCloudflareContext({ async: true });
   const { results } = await env.DB.prepare(
-    `select c.slug, c.year, c.is_public, s.day, s.credited_to, s.link,
+    `select c.slug, c.year, c.is_public, c.self_filled, s.day, s.credited_to, s.link,
             t.variant, t.url, t.title, t.artist, t.description, t.buy_link,
             t.cover_key, t.cover_url, t.provider_track_id, t.stream_url
        from calendars c
@@ -97,6 +103,7 @@ async function readCalendar(slug: string): Promise<CalendarPayload | null> {
     .all<TrackRow>();
 
   if (results.length === 0) return null;
+  const selfFilled = results[0].self_filled === 1;
 
   // Every Day is present, claimed or not: an empty Day holds no Track at all,
   // and the interface renders it as empty rather than leaving a hole.
@@ -112,8 +119,10 @@ async function readCalendar(slug: string): Promise<CalendarPayload | null> {
   for (const row of results) {
     if (row.day === null) continue;
     const day = days[row.day - 1];
-    day.creditedTo = row.credited_to ?? '';
-    day.contributorLink = row.link ?? '';
+    if (!selfFilled) {
+      day.creditedTo = row.credited_to ?? '';
+      day.contributorLink = row.link ?? '';
+    }
     if (row.variant) {
       day.tracks[row.variant as TrackVariant] = {
         url: row.url ?? '',
@@ -136,7 +145,7 @@ async function readCalendar(slug: string): Promise<CalendarPayload | null> {
     year: results[0].year,
     isPublic: results[0].is_public === 1,
     days,
-    contributors,
+    contributors: selfFilled ? null : contributors,
   };
 }
 
@@ -157,7 +166,7 @@ function edgeCache(): Cache | null {
  * cached under the old shape is never read back as the new one.
  */
 const cacheKey = (slug: string) =>
-  new Request(`https://calendar-payload.invalid/v2/${encodeURIComponent(slug)}`);
+  new Request(`https://calendar-payload.invalid/v3/${encodeURIComponent(slug)}`);
 
 /**
  * The Calendar at `slug`, from the cache when it is there and from the database

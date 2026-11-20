@@ -529,9 +529,12 @@ export async function updateSubmission(
 
 /**
  * A self-filled Calendar's Day, as its Curator sees it while filling it in:
- * which Variants to ask for, what is already there, and — for an empty Day —
- * the name and link the Curator last credited, so twenty-five Days are not
- * twenty-five times the same typing.
+ * which Variants to ask for, and what is already there.
+ *
+ * The Curator is never asked who to credit — a Self-filled Calendar credits
+ * nobody. A filled Day keeps whatever name, link and email it already had; an
+ * empty one is credited to the Calendar's own name, because the column needs
+ * something and that is what would show if the flag were ever turned off.
  *
  * **This is the one place a Curator reads Track content outside spoiling.** It
  * is gated on `self_filled`: a Curator who fills every Day themselves wrote
@@ -558,15 +561,9 @@ export async function getDayToFill(
     }
   }
 
-  const last = await database
-    .prepare(
-      'select credited_to, link from submissions where calendar_id = ?1 order by created_at desc limit 1',
-    )
-    .bind(calendarId)
-    .first<{ credited_to: string; link: string }>();
   return {
     variants: await readVariants(calendarId),
-    draft: { creditedTo: last?.credited_to ?? '', link: last?.link ?? '', email: '', tracks: {} },
+    draft: { creditedTo: calendar.name, link: '', email: '', tracks: {} },
     claimed: false,
     archived: isArchived(calendar.year, new Date()),
   };
