@@ -50,3 +50,5 @@ next-env.d.ts
 # generated at build time from the deployed database; see
 # scripts/build-peek-pool.mjs
 /src/app/peek-pool.json
+
+.claude
