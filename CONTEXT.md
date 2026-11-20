@@ -21,14 +21,25 @@ it for the person who made a calendar would make that distinction impossible to
 name.
 
 A Curator can see *who* has claimed each Day, but not *what* they submitted. The
-surprise belongs to the Curator too.
+surprise belongs to the Curator too — except on a Self-filled Calendar, where
+the Curator sees every Day's contents.
+
+### Self-filled
+
+A Calendar whose Curator fills every Day themselves rather than sending round a
+Submit slug. The Curator picks the Day for each Submission instead of being
+dealt one, and sees what is behind every door — including any a Contributor
+filled before the Calendar became self-filled. Only an Admin marks a Calendar
+self-filled; it is off by default.
 
 ### Admin
 
 Platform staff. An Admin signs in like a Curator but sees every Calendar on the
 platform, and may delete a Calendar outright or delete the Submission on any Day
-of a Calendar that is not yet an Archive. Like a Curator, an Admin sees who
-claimed a Day, never what they submitted.
+of a Calendar that is not yet an Archive. From the Admin list an Admin sees who
+claimed a Day, never what they submitted. An Admin may also open any Calendar's
+backend and act there as its Curator — with the Curator's own blindness, and
+the Curator's own ways past it.
 
 ### Day
 

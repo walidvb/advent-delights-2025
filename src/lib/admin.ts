@@ -11,7 +11,8 @@ import { purgeCalendarPayload } from './calendar-payload';
  * only ever reached by an Admin.
  *
  * Like the Curator's view, this never touches Track content: an Admin sees who
- * claimed a Day, not what they put there.
+ * claimed a Day, not what they put there. Opening a Calendar's backend from
+ * here is a different door — there an Admin sees what its Curator would.
  */
 
 export type AdminCalendar = {
@@ -19,6 +20,7 @@ export type AdminCalendar = {
   name: string;
   year: number;
   slug: string;
+  selfFilled: boolean;
   curatorEmail: string;
   claims: { day: number; claimedBy: string }[];
 };
@@ -41,11 +43,11 @@ export async function listAllCalendars(): Promise<AdminCalendar[]> {
   const [calendars, claims] = await Promise.all([
     database
       .prepare(
-        `select c.id, c.name, c.year, c.slug, cu.email as curatorEmail
+        `select c.id, c.name, c.year, c.slug, c.self_filled as selfFilled, cu.email as curatorEmail
            from calendars c join curators cu on cu.id = c.curator_id
           order by c.year desc, c.created_at desc`,
       )
-      .all<Omit<AdminCalendar, 'claims'>>(),
+      .all<Omit<AdminCalendar, 'claims' | 'selfFilled'> & { selfFilled: number }>(),
     database
       .prepare('select calendar_id, day, credited_to from submissions order by day')
       .all<{ calendar_id: string; day: number; credited_to: string }>(),
@@ -54,6 +56,7 @@ export async function listAllCalendars(): Promise<AdminCalendar[]> {
   const byCalendar = Map.groupBy(claims.results, (row) => row.calendar_id);
   return calendars.results.map((calendar) => ({
     ...calendar,
+    selfFilled: calendar.selfFilled === 1,
     claims: (byCalendar.get(calendar.id) ?? []).map((row) => ({ day: row.day, claimedBy: row.credited_to })),
   }));
 }
@@ -122,4 +125,13 @@ export async function deleteSubmission(calendarId: string, day: number): Promise
   ]);
 
   await purgeCalendarPayload(calendar.slug);
+}
+
+/** Turns a Calendar's self-filled flag on or off, whoever curates it. */
+export async function setSelfFilled(id: string, selfFilled: boolean): Promise<void> {
+  await requireAdmin();
+  await (await db())
+    .prepare('update calendars set self_filled = ?2 where id = ?1')
+    .bind(id, selfFilled ? 1 : 0)
+    .run();
 }

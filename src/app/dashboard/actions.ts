@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation';
 import { getCurator, setPassword } from '@/lib/auth';
 import { createCalendar, updateCalendar, type ChosenSlug } from '@/lib/calendars';
 import { deleteSubmission } from '@/lib/curation';
+import { DAYS_IN_CALENDAR } from '@/app/advent/reveal';
+import { resolveTracks } from '@/lib/media';
+import { draftProblem, fillDay, getDayToFill, readDraft, type SubmissionDraft } from '@/lib/submissions';
 
 export async function createCalendarAction(formData: FormData) {
   const curator = await getCurator();
@@ -67,4 +70,48 @@ export async function setPasswordAction(formData: FormData) {
 
   const result = await setPassword(curator.id, String(formData.get('password') ?? ''));
   redirect(`/dashboard?passwordSet=${result}`);
+}
+
+/** What the fill form knows after a refused save: the keep-what-you-typed shape. */
+export type FillState = { attempt: number; error?: string; draft?: SubmissionDraft };
+
+/**
+ * Saves one Day of a self-filled Calendar, then goes wherever the button that
+ * was pressed said: back to the grid, or straight on to the Day named in its
+ * value — the following one.
+ *
+ * Ownership and the self-filled flag are both checked inside `fillDay`, so a
+ * forged id or a Calendar that is not self-filled writes nothing.
+ */
+export async function fillDayAction(previous: FillState, formData: FormData): Promise<FillState> {
+  const curator = await getCurator();
+  if (!curator) redirect('/sign-in');
+
+  const attempt = previous.attempt + 1;
+  const id = String(formData.get('id') ?? '');
+  const day = Number(formData.get('day'));
+
+  const target = await getDayToFill(id, curator.id, day);
+  if (!target) return { attempt, error: 'This Calendar is not one you fill yourself.' };
+
+  const draft = readDraft(formData, target.variants);
+  const problem =
+    draftProblem(draft, target.variants) ?? (await resolveTracks(draft.tracks, target.variants));
+  if (problem) return { attempt, error: problem, draft };
+
+  const result = await fillDay(id, curator.id, day, draft);
+  if (result === 'revealed') {
+    return { attempt, error: `Day ${day} has already opened, so it stays empty.`, draft };
+  }
+  if (result === 'archived') {
+    return { attempt, error: 'This Calendar has finished — an Archive can no longer be changed.', draft };
+  }
+  if (result === 'not-found') return { attempt, error: 'This Calendar is not one you fill yourself.' };
+
+  const next = Number(formData.get('next'));
+  redirect(
+    Number.isInteger(next) && next >= 1 && next <= DAYS_IN_CALENDAR
+      ? `/dashboard/calendar/${id}/day/${next}`
+      : `/dashboard/calendar/${id}`,
+  );
 }

@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { deleteCalendar, deleteSubmission, refreshCalendar } from '@/lib/admin';
+import { deleteCalendar, deleteSubmission, refreshCalendar, setSelfFilled } from '@/lib/admin';
 
 /** Admin checks live inside `deleteCalendar` / `deleteSubmission`, not here. */
 export async function deleteCalendarAction(id: string) {
@@ -16,5 +16,10 @@ export async function refreshCalendarAction(id: string) {
 
 export async function deleteSubmissionAction(calendarId: string, day: number) {
   await deleteSubmission(calendarId, day);
+  redirect('/admin');
+}
+
+export async function setSelfFilledAction(id: string, selfFilled: boolean) {
+  await setSelfFilled(id, selfFilled);
   redirect('/admin');
 }

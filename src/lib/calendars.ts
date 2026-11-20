@@ -6,7 +6,9 @@ import { purgeCalendarPayload } from './calendar-payload';
  *
  * Every read and write here is scoped by `curator_id`, so a Curator can neither
  * see nor edit a Calendar they do not own — there is no unscoped lookup by id
- * in this module to reach for by accident.
+ * in this module to reach for by accident. The one exception is an Admin, whom
+ * `getOwnedCalendar` treats as owning every Calendar, so that they can open any
+ * Calendar's backend from `/admin` and act there as its Curator.
  */
 
 /** The Slug a write settled on, and whether the one asked for was already taken. */
@@ -20,6 +22,8 @@ export type Calendar = {
   slug: string;
   submit_slug: string;
   is_public: number;
+  /** The Curator fills every Day themselves — see `fillDay`. Set by an Admin only. */
+  self_filled: number;
 };
 
 /** A Calendar plus how many Days have a Submission, for the list's dot-grid. */
@@ -187,7 +191,7 @@ export async function createCalendar(
 export async function listCalendars(curatorId: string): Promise<CalendarWithCount[]> {
   const { results } = await (await db())
     .prepare(
-      `select c.id, c.name, c.description, c.year, c.slug, c.submit_slug, c.is_public,
+      `select c.id, c.name, c.description, c.year, c.slug, c.submit_slug, c.is_public, c.self_filled,
               count(s.id) as claimedCount
          from calendars c
          left join submissions s on s.calendar_id = c.id
@@ -200,12 +204,19 @@ export async function listCalendars(curatorId: string): Promise<CalendarWithCoun
   return results;
 }
 
-/** The Calendar, or null if it does not exist or is somebody else's. */
+/**
+ * The Calendar, or null if it does not exist or is somebody else's — unless
+ * `curatorId` is an Admin's, who may manage any Calendar. Every ownership check
+ * in the Curator's backend goes through here, so this is the whole of what lets
+ * an Admin in.
+ */
 export async function getOwnedCalendar(id: string, curatorId: string) {
   return await (await db())
     .prepare(
-      `select id, name, description, year, slug, submit_slug, is_public
-         from calendars where id = ?1 and curator_id = ?2`,
+      `select id, name, description, year, slug, submit_slug, is_public, self_filled
+         from calendars
+        where id = ?1
+          and (curator_id = ?2 or exists (select 1 from curators where id = ?2 and admin = 1))`,
     )
     .bind(id, curatorId)
     .first<Calendar>();
@@ -233,10 +244,18 @@ export async function updateCalendar(
 
   await (await db())
     .prepare(
-      `update calendars set name = ?3, description = ?4, slug = ?5, is_public = ?6
-         where id = ?1 and curator_id = ?2`,
+      // Ownership was settled by `getOwnedCalendar` above, Admins included.
+      // Not `self_filled`: only an Admin sets that, from `/admin`.
+      `update calendars set name = ?2, description = ?3, slug = ?4, is_public = ?5
+         where id = ?1`,
     )
-    .bind(id, curatorId, name, fields.description.trim(), slug.slug, fields.isPublic ? 1 : 0)
+    .bind(
+      id,
+      name,
+      fields.description.trim(),
+      slug.slug,
+      fields.isPublic ? 1 : 0,
+    )
     .run();
 
   // The Calendar has been written to, so its cached payload is stale. Both

@@ -27,11 +27,18 @@ export default async function CalendarSettingsPage({ params }: { params: Promise
     origin(),
   ]);
   if (!calendar || !claims) notFound();
+  const selfFilled = Boolean(calendar.self_filled);
 
   return (
     <main className="min-h-dvh bg-[url('/light.webp')] bg-cover bg-fixed bg-center">
       <header className="flex items-center justify-between gap-4 border-b border-black/5 bg-white/40 px-6 py-4 backdrop-blur sm:px-10">
         <div className="flex items-center gap-2 text-sm text-zinc-600">
+          {curator.isAdmin && (
+            <>
+              <Link href="/admin">Admin</Link>
+              <span className="text-zinc-400">/</span>
+            </>
+          )}
           <Link href="/dashboard">Your calendars</Link>
           <span className="text-zinc-400">/</span>
           <span className="text-zinc-900">{calendar.name}</span>
@@ -45,29 +52,46 @@ export default async function CalendarSettingsPage({ params }: { params: Promise
               {calendar.name} <span className="text-lg text-zinc-500">{calendar.year}</span>
             </h1>
             <p className="text-sm text-zinc-600">
-              {claims.claimedCount} of {claims.days.length} days claimed. Names are hidden until you
-              ask — contents never.
+              {selfFilled
+                ? `${claims.claimedCount} of ${claims.days.length} days filled. Click any day to fill it in.`
+                : `${claims.claimedCount} of ${claims.days.length} days claimed. Names are hidden until you ask — contents never.`}
             </p>
           </div>
 
-          <ClaimGrid calendarId={calendar.id} year={calendar.year} days={claims.days} />
+          <ClaimGrid
+            calendarId={calendar.id}
+            year={calendar.year}
+            days={claims.days}
+            selfFilled={selfFilled}
+          />
         </div>
 
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-4 rounded-2xl border border-white/70 bg-white/95 p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_8px_24px_rgba(0,0,0,.06)]">
-            <span className="font-mono text-[11px] uppercase tracking-wide text-zinc-400">
-              Two links, two jobs
-            </span>
-            <CopyLink
-              label="Submit link"
-              hint="send this now — how people claim a day"
-              url={base + submitPath(calendar.submit_slug)}
-            />
-            <CopyLink
-              label="Calendar link"
-              hint="send in December — nothing opens early"
-              url={base + calendarPath(calendar.slug)}
-            />
+            {/* A self-filled Calendar has nobody to send a Submit link to. */}
+            {selfFilled ? (
+              <CopyLink
+                label="Calendar link"
+                hint="send in December — nothing opens early"
+                url={base + calendarPath(calendar.slug)}
+              />
+            ) : (
+              <>
+                <span className="font-mono text-[11px] uppercase tracking-wide text-zinc-400">
+                  Two links, two jobs
+                </span>
+                <CopyLink
+                  label="Submit link"
+                  hint="send this now — how people claim a day"
+                  url={base + submitPath(calendar.submit_slug)}
+                />
+                <CopyLink
+                  label="Calendar link"
+                  hint="send in December — nothing opens early"
+                  url={base + calendarPath(calendar.slug)}
+                />
+              </>
+            )}
           </div>
 
           <form
@@ -114,6 +138,24 @@ export default async function CalendarSettingsPage({ params }: { params: Promise
               Listed for others to discover. Private isn&apos;t advertised — anyone with the link
               can still open it.
             </p>
+
+            {/* Admin-only for now: an Admin turns this on from /admin. Curators may
+                get the switch back here later — saving Settings doesn't touch the
+                flag, so this needs wiring into updateCalendar again if it does.
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="self_filled"
+                defaultChecked={selfFilled}
+                className="size-4"
+              />
+              I&apos;ll fill every day myself
+            </label>
+            <p className="-mt-2 text-xs text-zinc-400">
+              Click a day in the grid to fill it in, and you&apos;ll see everything behind each door
+              — the surprise is off for you.
+            </p>
+            */}
 
             <button
               type="submit"

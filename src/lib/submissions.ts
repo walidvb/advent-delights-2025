@@ -1,6 +1,7 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { claimableDays, DAYS_IN_CALENDAR, isArchived, revealedDayCount } from '@/app/advent/reveal';
 import { purgeCalendarPayload } from './calendar-payload';
+import { getOwnedCalendar } from './calendars';
 
 /**
  * Submission intake: what a Contributor sees at the Submit slug, the claim
@@ -11,14 +12,16 @@ import { purgeCalendarPayload } from './calendar-payload';
  * **No Contributor ever sees another's content.** Every read in this module
  * selects Day and credited name and nothing else — helping build the Calendar
  * must not spoil it. There is deliberately no query here that joins `tracks`
- * for anybody but the holder of a Submission's own edit token.
+ * for anybody but the holder of a Submission's own edit token — and, on a
+ * Self-filled Calendar, its Curator (`getDayToFill`).
  *
  * **Claiming happens on submit.** The unique index on
  * `submissions (calendar_id, day)` decides who got the Day; this module inserts
  * and handles the constraint violation rather than looking first and inserting
  * after, because anything else has a gap between the two.
  *
- * **The Day is dealt, not chosen.** A Contributor never sees which Days are
+ * **The Day is dealt, not chosen** — to a Contributor. (A Self-filled
+ * Calendar's Curator picks theirs: `fillDay`.) A Contributor never sees which Days are
  * free, only how full the Calendar is. `createSubmission` picks a random
  * still-claimable Day itself, at the moment of insert — reserving one earlier,
  * when the claim form is first opened, would let an abandoned form squat a Day
@@ -522,4 +525,115 @@ export async function updateSubmission(
 
   await purgeCalendarPayload(submission.calendar_slug);
   return { calendarSlug: submission.calendar_slug };
+}
+
+/**
+ * A self-filled Calendar's Day, as its Curator sees it while filling it in:
+ * which Variants to ask for, what is already there, and — for an empty Day —
+ * the name and link the Curator last credited, so twenty-five Days are not
+ * twenty-five times the same typing.
+ *
+ * **This is the one place a Curator reads Track content outside spoiling.** It
+ * is gated on `self_filled`: a Curator who fills every Day themselves wrote
+ * every door, so there is no surprise left to keep from them. Null when the
+ * Calendar is not theirs, or is not self-filled.
+ */
+export async function getDayToFill(
+  calendarId: string,
+  curatorId: string,
+  day: number,
+): Promise<{ variants: Variant[]; draft: SubmissionDraft; claimed: boolean; archived: boolean } | null> {
+  const calendar = await getOwnedCalendar(calendarId, curatorId);
+  if (!calendar?.self_filled) return null;
+
+  const database = await db();
+  const existing = await database
+    .prepare('select edit_token from submissions where calendar_id = ?1 and day = ?2')
+    .bind(calendarId, day)
+    .first<{ edit_token: string }>();
+  if (existing) {
+    const submission = await getSubmission(existing.edit_token);
+    if (submission) {
+      return { variants: submission.variants, draft: submission.draft, claimed: true, archived: submission.archived };
+    }
+  }
+
+  const last = await database
+    .prepare(
+      'select credited_to, link from submissions where calendar_id = ?1 order by created_at desc limit 1',
+    )
+    .bind(calendarId)
+    .first<{ credited_to: string; link: string }>();
+  return {
+    variants: await readVariants(calendarId),
+    draft: { creditedTo: last?.credited_to ?? '', link: last?.link ?? '', email: '', tracks: {} },
+    claimed: false,
+    archived: isArchived(calendar.year, new Date()),
+  };
+}
+
+export type FillResult = { calendarSlug: string } | 'not-found' | 'revealed' | 'archived';
+
+/**
+ * Puts a Submission on the Day the Curator chose, or rewrites the one already
+ * there. The self-filled counterpart of `createSubmission`: the Day is picked,
+ * not dealt, because the person picking is the one the surprise was for.
+ *
+ * The reveal rules still hold. An empty Day that has already revealed stays
+ * empty (`'revealed'`), and an Archive cannot be changed (`'archived'`).
+ * `'not-found'` covers a Calendar that is not theirs or not self-filled.
+ */
+export async function fillDay(
+  calendarId: string,
+  curatorId: string,
+  day: number,
+  draft: SubmissionDraft,
+): Promise<FillResult> {
+  const calendar = await getOwnedCalendar(calendarId, curatorId);
+  if (!calendar?.self_filled) return 'not-found';
+  if (isArchived(calendar.year, new Date())) return 'archived';
+
+  const database = await db();
+  const existing = await database
+    .prepare('select edit_token, email from submissions where calendar_id = ?1 and day = ?2')
+    .bind(calendarId, day)
+    .first<{ edit_token: string; email: string }>();
+  if (existing) {
+    // The fill form never asks for an email, so keep whatever a Contributor
+    // left rather than blanking it.
+    const updated = await updateSubmission(existing.edit_token, { ...draft, email: existing.email });
+    if (updated === 'archived') return 'archived';
+    return updated ?? 'not-found';
+  }
+
+  if (!claimableDays(calendar.year, new Date()).includes(day)) return 'revealed';
+
+  const id = crypto.randomUUID().replaceAll('-', '');
+  const variants = await readVariants(calendarId);
+  // ponytail: a race with a Contributor claiming this very Day through the
+  // Submit slug surfaces as the unique-constraint error. The Curator chose to
+  // fill it themselves, so a concurrent outsider is not worth handling here.
+  await database.batch([
+    database
+      .prepare(
+        `insert into submissions (id, calendar_id, day, credited_to, link, email, edit_token, created_at)
+         values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)`,
+      )
+      .bind(
+        id,
+        calendarId,
+        day,
+        draft.creditedTo,
+        draft.link,
+        draft.email,
+        crypto.randomUUID().replaceAll('-', ''),
+        Date.now(),
+      ),
+    ...variants.map(({ variant }) =>
+      trackUpsert(database, id, variant, draft.tracks[variant] ?? emptyTrack()),
+    ),
+  ]);
+
+  await purgeCalendarPayload(calendar.slug);
+  return { calendarSlug: calendar.slug };
 }

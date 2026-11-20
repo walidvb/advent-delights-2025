@@ -2,7 +2,12 @@ import Link from 'next/link';
 import { isArchived } from '@/app/advent/reveal';
 import { listAllCalendars, requireAdmin } from '@/lib/admin';
 import { calendarPath } from '@/lib/calendars';
-import { deleteCalendarAction, deleteSubmissionAction, refreshCalendarAction } from './actions';
+import {
+  deleteCalendarAction,
+  deleteSubmissionAction,
+  refreshCalendarAction,
+  setSelfFilledAction,
+} from './actions';
 import { ConfirmDelete } from './ConfirmDelete';
 
 export default async function AdminPage() {
@@ -47,6 +52,28 @@ export default async function AdminPage() {
                       {calendar.curatorEmail} · {calendar.claims.length} of 25 claimed
                       {archived && ' · Archived'}
                     </span>
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+                      <Link href={`/dashboard/calendar/${calendar.id}`} className="underline">
+                        Open backend
+                      </Link>
+                      <form action={setSelfFilledAction.bind(null, calendar.id, !calendar.selfFilled)}>
+                        <button
+                          type="submit"
+                          role="switch"
+                          aria-checked={calendar.selfFilled}
+                          className="flex items-center gap-2 text-zinc-700"
+                        >
+                          <span
+                            className={`flex h-[18px] w-[30px] items-center rounded-full p-[2px] transition-colors ${
+                              calendar.selfFilled ? 'justify-end bg-zinc-900' : 'justify-start bg-zinc-300'
+                            }`}
+                          >
+                            <span className="size-3.5 rounded-full bg-white shadow" />
+                          </span>
+                          Self-filled
+                        </button>
+                      </form>
+                    </div>
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <form action={refreshCalendarAction.bind(null, calendar.id)}>

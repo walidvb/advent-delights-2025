@@ -6,7 +6,8 @@ import { getOwnedCalendar } from './calendars';
 
 /**
  * The Curator's view of their own Calendar: how full it is, who has claimed
- * which Day, and nothing whatsoever about what those people submitted.
+ * which Day, and nothing whatsoever about what those people submitted. (A
+ * Self-filled Calendar is the exception, read through `getDayToFill`.)
  *
  * **`getClaims` never touches `tracks`.** That is the whole ticket: a leak here
  * renders as a perfectly working page, so the only defence is that the query
@@ -16,7 +17,8 @@ import { getOwnedCalendar } from './calendars';
  *
  * Ownership is a property of this module, not of the pages: every entry point
  * takes a `curatorId` and starts by asking `getOwnedCalendar`, so a Calendar
- * that is not yours is indistinguishable from one that does not exist.
+ * that is not yours is indistinguishable from one that does not exist — unless
+ * you are an Admin, who `getOwnedCalendar` lets into every Calendar.
  */
 
 /** One Day of the Curator's grid. No Track content, by construction. */

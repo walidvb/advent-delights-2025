@@ -14,47 +14,68 @@ import { decemberOffset } from '@/app/advent/CalendarGrid';
  * submitted, so showing them is the occasional case, not the resting one —
  * and the switch is purely a display choice: the names are already in this
  * component's props either way, never fetched on demand.
+ *
+ * **A self-filled Calendar's grid is the way in to filling it**: every Day that
+ * can still take a Submission links to its form, empty or not, and there are no
+ * names to hide — they are all the Curator's own.
  */
 export function ClaimGrid({
   calendarId,
   year,
   days,
+  selfFilled,
 }: {
   calendarId: string;
   year: number;
   days: CuratedDay[];
+  selfFilled: boolean;
 }) {
   const [showNames, setShowNames] = useState(false);
   const offset = decemberOffset(year);
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => setShowNames((v) => !v)}
-          className={`flex items-center gap-2.5 rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
-            showNames
-              ? 'border-transparent bg-zinc-900 text-zinc-50'
-              : 'border-white/70 bg-white/80 text-zinc-700'
-          }`}
-        >
-          Show names
-          <span
-            className={`flex h-[22px] w-[38px] items-center rounded-full p-[3px] transition-colors ${
-              showNames ? 'justify-end bg-white/35' : 'justify-start bg-zinc-300'
+      {!selfFilled && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setShowNames((v) => !v)}
+            className={`flex items-center gap-2.5 rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
+              showNames
+                ? 'border-transparent bg-zinc-900 text-zinc-50'
+                : 'border-white/70 bg-white/80 text-zinc-700'
             }`}
           >
-            <span className="size-4 rounded-full bg-white shadow" />
-          </span>
-        </button>
-      </div>
+            Show names
+            <span
+              className={`flex h-[22px] w-[38px] items-center rounded-full p-[3px] transition-colors ${
+                showNames ? 'justify-end bg-white/35' : 'justify-start bg-zinc-300'
+              }`}
+            >
+              <span className="size-4 rounded-full bg-white shadow" />
+            </span>
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {offset > 0 && <div aria-hidden style={{ gridColumn: `span ${offset}` }} />}
         {days.map((day) => {
           const claimed = Boolean(day.claimedBy);
-          const label = claimed ? (showNames ? day.claimedBy : 'claimed') : day.claimable ? 'free' : 'unclaimed';
+          const label = selfFilled
+            ? claimed
+              ? 'filled'
+              : day.claimable
+                ? '+ fill'
+                : 'empty'
+            : claimed
+              ? showNames
+                ? day.claimedBy
+                : 'claimed'
+              : day.claimable
+                ? 'free'
+                : 'unclaimed';
+          const linked = claimed || (selfFilled && day.claimable);
           const tone = claimed
             ? 'border border-white/70 bg-white/90 shadow-[0_1px_2px_rgba(0,0,0,.04)]'
             : day.claimable
@@ -76,8 +97,8 @@ export function ClaimGrid({
 
           return (
             <div key={day.day}>
-              {claimed ? (
-                <Link href={`/dashboard/calendar/${calendarId}/day/${day.day}`}>{cell}</Link>
+              {linked ? (
+                <Link className="block transition-transform hover:-translate-y-0.5" href={`/dashboard/calendar/${calendarId}/day/${day.day}`}>{cell}</Link>
               ) : (
                 cell
               )}
@@ -88,10 +109,12 @@ export function ClaimGrid({
 
       <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500">
         <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-sm border border-zinc-900/15 bg-white" /> claimed
+          <span className="size-2.5 rounded-sm border border-zinc-900/15 bg-white" />{' '}
+          {selfFilled ? 'filled' : 'claimed'}
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-sm border border-dashed border-zinc-900/30" /> free
+          <span className="size-2.5 rounded-sm border border-dashed border-zinc-900/30" />{' '}
+          {selfFilled ? 'empty — click to fill' : 'free'}
         </span>
       </div>
     </div>
