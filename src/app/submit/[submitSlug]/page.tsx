@@ -1,6 +1,42 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import { getSubmitView } from '@/lib/submissions';
 import { SubmitForm } from './SubmitForm';
+
+/** One lookup per request, shared by the metadata and the page. */
+const submitView = cache(getSubmitView);
+
+const SHARE_IMAGE = { url: '/og-selector.jpg', width: 1200, height: 630, alt: 'Be a selector' };
+
+/**
+ * The link preview a Curator gets when they paste the Submit slug into a chat.
+ * It names the Calendar, not the Curator — a Curator is only an email address
+ * here — and keeps the page out of search results, since the Submit slug is a
+ * secret.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ submitSlug: string }>;
+}): Promise<Metadata> {
+  const view = await submitView((await params).submitSlug);
+  if (!view) return { robots: { index: false, follow: false } };
+
+  const title = `Be a selector for ${view.calendarName}`;
+  const description = `Take part in ${possessive(view.calendarName)} roster of selectors for this season's daily treats <3`;
+  return {
+    title,
+    description,
+    robots: { index: false, follow: false },
+    openGraph: { title, description, siteName: 'Advent Delights', images: [SHARE_IMAGE], type: 'website' },
+    twitter: { card: 'summary_large_image', title, description, images: [SHARE_IMAGE.url] },
+  };
+}
+
+function possessive(name: string) {
+  return /s$/i.test(name) ? `${name}'` : `${name}'s`;
+}
 
 /**
  * The Submit slug: where a Contributor is dealt a Day.
@@ -15,7 +51,7 @@ export default async function SubmitPage({
 }: {
   params: Promise<{ submitSlug: string }>;
 }) {
-  const view = await getSubmitView((await params).submitSlug);
+  const view = await submitView((await params).submitSlug);
   if (!view) notFound();
 
   return (
