@@ -4,6 +4,7 @@
 interface __BaseEnv_CloudflareEnv {
 	BUCKET: R2Bucket;
 	DB: D1Database;
+	IMAGES: ImagesBinding;
 	ASSETS: Fetcher;
 }
 declare namespace Cloudflare {

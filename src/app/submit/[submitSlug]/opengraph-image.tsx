@@ -10,10 +10,14 @@ import { getSubmitView } from '@/lib/submissions';
  *
  * Both are fixed once a Calendar exists, so the image can be cached as long as
  * a browser or chat app likes. It says nothing about which Days are claimed.
+ *
+ * `next/og` only draws PNG, and the backdrop's film grain makes that PNG over a
+ * megabyte — too big for some chat apps to show. So it goes out as a JPEG,
+ * converted by the Cloudflare Images binding.
  */
 export const alt = 'Be a selector for this advent calendar';
 export const size = { width: 1200, height: 630 };
-export const contentType = 'image/png';
+export const contentType = 'image/jpeg';
 
 export default async function Image({ params }: { params: Promise<{ submitSlug: string }> }) {
   const view = await getSubmitView((await params).submitSlug);
@@ -28,7 +32,7 @@ export default async function Image({ params }: { params: Promise<{ submitSlug: 
     asset('/og/disk.png'),
   ]);
 
-  return new ImageResponse(
+  const png = new ImageResponse(
     (
       <div
         style={{
@@ -111,6 +115,29 @@ export default async function Image({ params }: { params: Promise<{ submitSlug: 
       ],
     },
   );
+  return asJpeg(png);
+}
+
+/**
+ * The drawn PNG re-encoded as a JPEG, with the PNG's caching headers. Should
+ * the conversion fail, the PNG goes out instead: a heavy preview beats none.
+ */
+async function asJpeg(png: Response): Promise<Response> {
+  const { env } = await getCloudflareContext({ async: true });
+  const bytes = await png.arrayBuffer();
+  const headers = new Headers(png.headers);
+  try {
+    if (!env.IMAGES) throw new Error('No IMAGES binding');
+    const jpeg = await env.IMAGES.input(new Response(bytes).body!).output({
+      format: 'image/jpeg',
+      quality: 82,
+    });
+    headers.set('content-type', jpeg.contentType());
+    return new Response(jpeg.image(), { status: png.status, headers });
+  } catch (error) {
+    console.error('Share image stayed a PNG: the JPEG conversion failed', error);
+    return new Response(bytes, { status: png.status, headers });
+  }
 }
 
 /**
