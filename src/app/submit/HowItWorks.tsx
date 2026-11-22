@@ -116,7 +116,9 @@ export function HowItWorks({
 
       <div className={`${styles.now} flex flex-col gap-1 px-5 py-4`}>
         <span className="text-[11px] font-semibold uppercase tracking-[.16em] text-zinc-600">Now</span>
-        <h2 className="text-xl font-medium leading-tight">Choose {variants.length} tracks you like</h2>
+        <h2 className="text-xl font-medium leading-tight">
+          {variants.length === 1 ? 'Choose 1 track you love' : `Choose ${variants.length} tracks you like`}
+        </h2>
         <ul className="mt-1 flex flex-col gap-1 text-base">
           {variants.map(({ variant, label }) => (
             <li key={variant} className="flex items-center gap-2">
@@ -133,7 +135,7 @@ export function HowItWorks({
         <div className="flex min-w-0 flex-col gap-1">
           <span className="text-[11px] font-semibold uppercase tracking-[.16em] text-zinc-600">December</span>
           <p className="text-lg font-medium leading-tight">Wait until your day</p>
-          <p className="text-sm text-zinc-600">Your tracks will be revealed for all to listen.</p>
+          <p className="text-sm text-zinc-600">Your {variants.length === 1 ? 'track' : 'tracks'} will be revealed for all to listen.</p>
         </div>
         <div aria-hidden className={styles.grid}>
           <i className={styles.blank} />

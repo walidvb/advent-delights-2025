@@ -1,15 +1,24 @@
 import type { MediaRef } from '@cucu/media/core';
 
-export type TrackVariant = 'light' | 'heavy';
+export type TrackVariant = 'light' | 'heavy' | 'track';
 
 /**
- * Which Calendar the viewer is looking at: its Slug, and the year it belongs
- * to. The Slug keys the browser's record of which Days have been opened; the
- * year decides which Days have revealed.
+ * How the Calendar looks: its background and ink. `light` and `heavy` each
+ * carry their own; the neutral `track` follows the viewer's colour scheme.
+ */
+export type Mood = 'light' | 'dark';
+
+/**
+ * Which Calendar the viewer is looking at: its Slug, the year it belongs to,
+ * and its Variants. The Slug keys the browser's record of which Days have been
+ * opened; the year decides which Days have revealed; the Variants decide
+ * whether there is anything to switch between.
  */
 export interface CalendarIdentity {
   slug: string;
   year: number;
+  /** The Calendar's Variants, in order; the first is shown on arrival. */
+  variants: TrackVariant[];
 }
 
 /**

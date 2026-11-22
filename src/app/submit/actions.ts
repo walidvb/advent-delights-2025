@@ -61,7 +61,7 @@ export async function submitAction(
 
   // The Submission is already written and the cache already purged. The receipt
   // comes after, and cannot unmake any of it — see `sendReceipt`.
-  await sendReceipt(draft.email, view.calendarName, claimed);
+  await sendReceipt(draft.email, view.calendarName, view.variants.length, claimed);
 
   return { attempt: previous.attempt + 1, claimed };
 }
@@ -82,6 +82,7 @@ export async function submitAction(
 async function sendReceipt(
   email: string,
   calendarName: string,
+  trackCount: number,
   claimed: { editPath: string; calendarPath: string },
 ): Promise<void> {
   if (!email) return;
@@ -99,7 +100,9 @@ async function sendReceipt(
         preheader: 'Your edit link — keep this email, it is the only way back in.',
         blocks: [
           heading(`Thanks for contributing to ${calendarName}`),
-          paragraph('Your tracks are in. Change your submission any time with this link — keep this email, it is the only way back in.'),
+          paragraph(
+            `${trackCount === 1 ? 'Your track is' : 'Your tracks are'} in. Change your submission any time with this link — keep this email, it is the only way back in.`,
+          ),
           button(editUrl, 'Edit my submission'),
           linkLine(editUrl),
           paragraph('The Calendar itself, for December:'),

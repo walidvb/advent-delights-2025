@@ -16,6 +16,7 @@ export async function createCalendarAction(formData: FormData) {
     curator.id,
     String(formData.get('name') ?? ''),
     String(formData.get('description') ?? ''),
+    formData.get('tracksPerDay') === 'one' ? 'one' : 'two',
   );
 
   redirect(result === 'name' ? '/dashboard/new?error=name' : dashboardWithSlugNotice(result));

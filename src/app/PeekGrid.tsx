@@ -6,7 +6,6 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { DiscoBall, Peace } from './advent/VariantSwitch';
 import { swapPop, sweepStep } from './advent/swap-pop';
-import type { TrackVariant } from './advent/types';
 import { cn } from '@/lib/utils';
 import pool from './peek-pool.json';
 
@@ -15,6 +14,9 @@ import pool from './peek-pool.json';
 // the Calendar's `MediaEngine`, which can't mute — and the pool holds no
 // Bandcamp Tracks, so there is never a stream to look after.
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
+
+/** The peek is drawn from two-Variant Calendars only. */
+export type PeekVariant = 'light' | 'heavy';
 
 /** One Day of some past Calendar, as `scripts/build-peek-pool.mjs` bakes it. */
 type PeekDay = {
@@ -77,8 +79,8 @@ export function PeekGrid({
   variant,
   onVariantChange,
 }: {
-  variant: TrackVariant;
-  onVariantChange: (variant: TrackVariant) => void;
+  variant: PeekVariant;
+  onVariantChange: (variant: PeekVariant) => void;
 }) {
   const days = useDealtDays();
   const [playing, setPlaying] = useState(0);
@@ -152,7 +154,7 @@ function Cell({
 }: {
   n: number;
   day: PeekDay | undefined;
-  variant: TrackVariant;
+  variant: PeekVariant;
   playing: boolean;
   onPlay: () => void;
 }) {
@@ -232,8 +234,8 @@ function VariantPill({
   variant,
   onChange,
 }: {
-  variant: TrackVariant;
-  onChange: (variant: TrackVariant) => void;
+  variant: PeekVariant;
+  onChange: (variant: PeekVariant) => void;
 }) {
   const backdrop = (image: string) => ({
     backgroundImage: `url(${image})`,
@@ -241,7 +243,7 @@ function VariantPill({
     backgroundPosition: 'top',
   });
 
-  const half = (which: TrackVariant) =>
+  const half = (which: PeekVariant) =>
     cn(
       'relative z-10 flex cursor-pointer items-center justify-center rounded-full border-0 px-2 py-[3px] transition-colors lg:px-[26px] lg:py-[7px]',
       which === variant

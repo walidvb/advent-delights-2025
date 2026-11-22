@@ -30,7 +30,7 @@ export default async function NewCalendarPage({
         >
           <div className="flex flex-col gap-1">
             <h1 className="font-title text-3xl font-light">Start a calendar</h1>
-            <p className="text-sm text-zinc-500">You can change any of this later.</p>
+            <p className="text-sm text-zinc-500">You can change any of this later, except the tracks per day.</p>
           </div>
 
           {error === 'name' && (
@@ -57,6 +57,22 @@ export default async function NewCalendarPage({
           <p className="-mt-3 text-xs text-zinc-400">
             Shown on the Submit page. One line is plenty.
           </p>
+
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 text-sm">Tracks per day</legend>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="radio" name="tracksPerDay" value="two" defaultChecked className="mt-1" />
+              <span>
+                Two <span className="text-zinc-500">— one light, one heavy; listeners switch between them</span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="radio" name="tracksPerDay" value="one" className="mt-1" />
+              <span>
+                One <span className="text-zinc-500">— a single track each day</span>
+              </span>
+            </label>
+          </fieldset>
 
           <div className="flex items-center gap-3 pt-2">
             <button

@@ -20,6 +20,8 @@ export type CalendarPayload = {
   year: number;
   /** Not Public: the page still loads for anyone holding the Slug, but is not indexed. */
   isPublic: boolean;
+  /** The Calendar's Variants, in order: two to switch between, or one. */
+  variants: TrackVariant[];
   days: Day[];
   /**
    * Null on a Self-filled Calendar, which credits nobody: one person filled
@@ -83,24 +85,35 @@ type TrackRow = {
 };
 
 /**
- * One query for the whole Calendar. The left joins mean an unknown Slug comes
- * back empty, and a Calendar whose Days are all empty comes back as one row
- * with no Day — so this distinguishes "no such Calendar" from "nothing in it".
+ * One round trip for the whole Calendar: its Days and Tracks, and its Variants.
+ * In the first query the left joins mean an unknown Slug comes back empty, and
+ * a Calendar whose Days are all empty comes back as one row with no Day — so
+ * this distinguishes "no such Calendar" from "nothing in it".
  */
 async function readCalendar(slug: string): Promise<CalendarPayload | null> {
   const { env } = await getCloudflareContext({ async: true });
-  const { results } = await env.DB.prepare(
-    `select c.slug, c.year, c.is_public, c.self_filled, s.day, s.credited_to, s.link,
-            t.variant, t.url, t.title, t.artist, t.description, t.buy_link,
-            t.cover_key, t.cover_url, t.provider_track_id, t.stream_url
-       from calendars c
-       left join submissions s on s.calendar_id = c.id
-       left join tracks t on t.submission_id = s.id
-      where c.slug = ?1
-      order by s.day`,
-  )
-    .bind(slug)
-    .all<TrackRow>();
+  const [trackResult, variantResult] = await env.DB.batch([
+    env.DB.prepare(
+      `select c.slug, c.year, c.is_public, c.self_filled, s.day, s.credited_to, s.link,
+              t.variant, t.url, t.title, t.artist, t.description, t.buy_link,
+              t.cover_key, t.cover_url, t.provider_track_id, t.stream_url
+         from calendars c
+         left join submissions s on s.calendar_id = c.id
+         left join tracks t on t.submission_id = s.id
+        where c.slug = ?1
+        order by s.day`,
+    ).bind(slug),
+    env.DB.prepare(
+      `select v.variant
+         from calendar_variants v
+         join calendars c on c.id = v.calendar_id
+        where c.slug = ?1
+        order by v.position`,
+    ).bind(slug),
+  ]);
+  // One batch, two row shapes: D1 types a batch by a single row type.
+  const results = trackResult.results as TrackRow[];
+  const variantRows = variantResult.results as { variant: TrackVariant }[];
 
   if (results.length === 0) return null;
   const selfFilled = results[0].self_filled === 1;
@@ -144,6 +157,7 @@ async function readCalendar(slug: string): Promise<CalendarPayload | null> {
     slug: results[0].slug,
     year: results[0].year,
     isPublic: results[0].is_public === 1,
+    variants: variantRows.map((row) => row.variant),
     days,
     contributors: selfFilled ? null : contributors,
   };
@@ -166,7 +180,7 @@ function edgeCache(): Cache | null {
  * cached under the old shape is never read back as the new one.
  */
 const cacheKey = (slug: string) =>
-  new Request(`https://calendar-payload.invalid/v3/${encodeURIComponent(slug)}`);
+  new Request(`https://calendar-payload.invalid/v4/${encodeURIComponent(slug)}`);
 
 /**
  * The Calendar at `slug`, from the cache when it is there and from the database

@@ -161,8 +161,11 @@ export const Peace = (props: any) => (
 );
 
 export function VariantSwitch() {
-  const { variant, setVariant, currentDayIndex, openedIndices } =
+  const { variants, variant, setVariant, currentDayIndex, openedIndices } =
     useAdventDay();
+
+  // One Variant, nothing to switch. The empty cell keeps the Header's columns.
+  if (variants.length < 2) return <div />;
 
   const hasUnrevealedTracks =
     currentDayIndex >= 0 &&

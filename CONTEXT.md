@@ -80,8 +80,10 @@ else — nothing is hosted here.
 The axis along which a Day's Tracks differ from one another. A Calendar's
 Variants are the same for every Day in it.
 
-The two Variants are `light` and `heavy`. A Day holds one Track per Variant, and
-a viewer reads the Calendar one Variant at a time, switching between them.
+A Calendar has either two Variants, `light` and `heavy`, or one, `track`. The
+Curator chooses when creating the Calendar, and it is fixed after. A Day holds
+one Track per Variant. With two, a viewer reads the Calendar one Variant at a
+time, switching between them; with one, there is nothing to switch.
 
 ## Access and naming
 

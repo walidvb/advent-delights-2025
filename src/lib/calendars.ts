@@ -30,13 +30,19 @@ export type Calendar = {
 export type CalendarWithCount = Calendar & { claimedCount: number };
 
 /**
- * The interface supports exactly these two, with its copy frozen; the labels
- * are stored per Calendar but unused for now.
+ * How many Tracks a Day holds, chosen when the Calendar is created and fixed
+ * after: two Variants to switch between, or one neutral Variant and no switch.
+ * The labels are stored per Calendar but unused for now.
  */
-const VARIANTS = [
-  { variant: 'light', label: 'Light' },
-  { variant: 'heavy', label: 'Heavy' },
-];
+export type CalendarShape = 'one' | 'two';
+
+const VARIANTS: Record<CalendarShape, { variant: string; label: string }[]> = {
+  two: [
+    { variant: 'light', label: 'Light' },
+    { variant: 'heavy', label: 'Heavy' },
+  ],
+  one: [{ variant: 'track', label: 'Track' }],
+};
 
 /** Longest a derived Slug gets before a numeric suffix is even considered. */
 const MAX_SLUG_LENGTH = 60;
@@ -153,6 +159,7 @@ export async function createCalendar(
   curatorId: string,
   rawName: string,
   rawDescription: string,
+  shape: CalendarShape,
 ): Promise<ChosenSlug | 'name'> {
   const name = rawName.trim();
   if (!name) return 'name';
@@ -178,7 +185,7 @@ export async function createCalendar(
         submitSlug,
         Date.now(),
       ),
-    ...VARIANTS.map((v, position) =>
+    ...VARIANTS[shape].map((v, position) =>
       database
         .prepare('insert into calendar_variants (calendar_id, variant, label, position) values (?1, ?2, ?3, ?4)')
         .bind(id, v.variant, v.label, position),

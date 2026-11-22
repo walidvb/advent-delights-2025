@@ -179,6 +179,7 @@ function DealCard({
 const ASKS: Record<string, { icon: string; ask: string }> = {
   light: { icon: '☾', ask: 'to soothe the mind' },
   heavy: { icon: '✺', ask: 'to move your feet' },
+  track: { icon: '♪', ask: 'track you love' },
 };
 
 function Wizard({
@@ -220,7 +221,7 @@ function Wizard({
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/70 bg-white/70 px-5 py-3 backdrop-blur">
         <span className="text-sm text-muted-foreground">
           {step <= view.variants.length
-            ? "Your tracks will be revealed in December, you don't know when exactly."
+            ? `Your ${view.variants.length === 1 ? 'track' : 'tracks'} will be revealed in December, you don't know when exactly.`
             : 'And you'}
         </span>
         <span className="shrink-0 whitespace-nowrap font-mono text-xs text-muted-foreground">
@@ -245,8 +246,8 @@ function Wizard({
           hidden={step !== i + 1}
           className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/95 p-6 shadow-[0_10px_30px_rgba(0,0,0,.08)]"
         >
-          {/* The ask, again, with this step's half of it picked out. */}
-          <p className="text-sm text-muted-foreground">
+          {/* The ask, again, with this step's half of it picked out. One Variant has no halves. */}
+          <p hidden={view.variants.length < 2} className="text-sm text-muted-foreground">
             Two recommendations:{' '}
             {view.variants.map((v, j) => (
               <span key={v.variant}>

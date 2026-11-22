@@ -39,13 +39,13 @@ function AboutIcon({ className }: { className?: string }) {
 }
 
 export function Header({ onAboutClick }: HeaderProps) {
-  const { variant } = useAdventDay();
+  const { mood } = useAdventDay();
 
   return (
     <header className="flex flex-col md:grid grid-cols-3 md:items-center justify-between px-6 py-4 md:py-8 gap-8">
       <h1
         className={`text-5xl md:text-6xl font-light italic font-title select-none ${
-          variant === 'light' ? 'text-zinc-900' : 'text-white'
+          mood === 'light' ? 'text-zinc-900' : 'text-white'
         }`}
         onDoubleClick={() => {
           localStorage.clear();
@@ -63,7 +63,7 @@ export function Header({ onAboutClick }: HeaderProps) {
       <button
         onClick={onAboutClick}
         className={`text-sm font-medium transition-colors mr-4 cursor-pointer absolute top-6 right-4 md:static  justify-self-end ${
-          variant === 'light'
+          mood === 'light'
             ? 'text-zinc-600 hover:text-zinc-900'
             : 'text-zinc-400 hover:text-white'
         }`}

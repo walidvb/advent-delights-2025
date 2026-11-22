@@ -70,7 +70,7 @@ export function CalendarCard({
   entranceDelay,
   swapStep,
 }: CalendarCardProps) {
-  const { currentDayIndex, variant } = useAdventDay();
+  const { currentDayIndex, variant, mood } = useAdventDay();
   const isInactive = day.dayIndex > currentDayIndex;
   const isToday = day.dayIndex === currentDayIndex;
   const isUnrevealed = !isInactive && !isRevealed;
@@ -235,8 +235,8 @@ export function CalendarCard({
       className={cn(
         'relative aspect-square  overflow-hidden rounded-lg bg-zinc-100',
         {
-          'bg-zinc-100/25 backdrop-blur-2xl': isInactive && variant === 'light',
-          'bg-zinc-900/25 backdrop-blur-2xl': isInactive && variant !== 'light',
+          'bg-zinc-100/25 backdrop-blur-2xl': isInactive && mood === 'light',
+          'bg-zinc-900/25 backdrop-blur-2xl': isInactive && mood !== 'light',
           'cursor-pointer': !isInactive,
         }
       )}
@@ -376,8 +376,8 @@ export function CalendarCard({
         className={cn(
           'absolute bottom-2 right-2 text-2xl font-bold',
           {
-            'text-zinc-900': variant === 'light',
-            'text-zinc-100': variant !== 'light',
+            'text-zinc-900': mood === 'light',
+            'text-zinc-100': mood !== 'light',
           },
           'text-zinc-100'
         )}

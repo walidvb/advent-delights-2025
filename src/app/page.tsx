@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'motion/react';
-import { PeekGrid } from './PeekGrid';
-import type { TrackVariant } from './advent/types';
+import { PeekGrid, type PeekVariant } from './PeekGrid';
 import { cn } from '@/lib/utils';
 
 /**
@@ -17,7 +16,7 @@ import { cn } from '@/lib/utils';
  * Worker serves without touching the database.
  */
 export default function Home() {
-  const [variant, setVariant] = useState<TrackVariant>('light');
+  const [variant, setVariant] = useState<PeekVariant>('light');
   const light = variant === 'light';
 
   // The Variant is the whole page's mood, not the grid's: switching it swaps

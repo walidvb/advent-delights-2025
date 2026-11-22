@@ -21,7 +21,7 @@ export function AdventCalendar({ year, days, contributors }: AdventCalendarProps
   const {
     openedIndices,
     addOpenedIndex,
-    variant,
+    mood,
     shuffleEnabled,
     setShuffleEnabled,
   } = useAdventDay();
@@ -160,7 +160,7 @@ export function AdventCalendar({ year, days, contributors }: AdventCalendarProps
     <div className="relative min-h-screen pb-64 md:pb-24">
       <AnimatePresence>
         <motion.div
-          key={variant}
+          key={mood}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -168,7 +168,7 @@ export function AdventCalendar({ year, days, contributors }: AdventCalendarProps
           className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: `url(${
-              variant === 'light' ? '/light.webp' : '/dark.webp'
+              mood === 'light' ? '/light.webp' : '/dark.webp'
             })`,
           }}
         />
