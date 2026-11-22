@@ -45,6 +45,8 @@ export type Variant = { variant: string; label: string };
  */
 export type SubmitView = {
   calendarName: string;
+  /** The December the Calendar runs in. */
+  year: number;
   calendarSlug: string;
   submitSlug: string;
   variants: Variant[];
@@ -235,6 +237,7 @@ export async function getSubmitView(submitSlug: string): Promise<SubmitView | nu
 
   return {
     calendarName: calendar.name,
+    year: calendar.year,
     calendarSlug: calendar.slug,
     submitSlug,
     variants: await readVariants(calendar.id),

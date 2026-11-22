@@ -7,13 +7,11 @@ import { SubmitForm } from './SubmitForm';
 /** One lookup per request, shared by the metadata and the page. */
 const submitView = cache(getSubmitView);
 
-const SHARE_IMAGE = { url: '/og-selector.jpg', width: 1200, height: 630, alt: 'Be a selector' };
-
 /**
  * The link preview a Curator gets when they paste the Submit slug into a chat.
  * It names the Calendar, not the Curator — a Curator is only an email address
  * here — and keeps the page out of search results, since the Submit slug is a
- * secret.
+ * secret. The image is `opengraph-image.tsx`, drawn per Calendar.
  */
 export async function generateMetadata({
   params,
@@ -29,8 +27,8 @@ export async function generateMetadata({
     title,
     description,
     robots: { index: false, follow: false },
-    openGraph: { title, description, siteName: 'Advent Delights', images: [SHARE_IMAGE], type: 'website' },
-    twitter: { card: 'summary_large_image', title, description, images: [SHARE_IMAGE.url] },
+    openGraph: { title, description, siteName: 'Advent Delights', type: 'website' },
+    twitter: { card: 'summary_large_image', title, description },
   };
 }
 
