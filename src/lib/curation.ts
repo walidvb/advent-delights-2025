@@ -78,6 +78,16 @@ export async function getClaims(
   };
 }
 
+/**
+ * Everyone who has claimed a Day, once each, in alphabetical order — never Day
+ * order, which would say which Day is whose. Who joined is what a Curator needs
+ * to know who to remind; the Day assigned to each is the part kept hidden.
+ */
+export function participantNames(days: CuratedDay[]): string[] {
+  const names = new Set(days.flatMap((day) => (day.claimedBy ? [day.claimedBy] : [])));
+  return [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
+
 /** Who claimed one Day, without saying what they put there. Null if nobody did. */
 export async function getClaim(
   calendarId: string,

@@ -184,6 +184,9 @@ export function AdventCalendar({ year, days, contributors }: AdventCalendarProps
         onHover={handleHover}
         onMobileSelect={handleMobileSelect}
       />
+      {contributors && contributors.length > 0 && (
+        <Participants contributors={contributors} mood={mood} />
+      )}
       <DetailsCard
         day={hoveredDay}
         position={mousePosition}
@@ -209,5 +212,43 @@ export function AdventCalendar({ year, days, contributors }: AdventCalendarProps
         contributors={contributors}
       />
     </div>
+  );
+}
+
+/**
+ * Who is in this Calendar, under the grid. Names only, in the payload's
+ * alphabetical order — which Day belongs to whom stays behind the doors.
+ */
+function Participants({ contributors, mood }: { contributors: Contributor[]; mood: string }) {
+  const light = mood === 'light';
+  return (
+    <section className="mx-auto max-w-3xl px-6 pt-6 text-center">
+      <h2
+        className={`mb-2 font-mono text-[11px] uppercase tracking-wide ${
+          light ? 'text-zinc-500' : 'text-zinc-400'
+        }`}
+      >
+        With music from
+      </h2>
+      <p className={`text-sm leading-relaxed ${light ? 'text-zinc-700' : 'text-zinc-200'}`}>
+        {contributors.map((contributor, index) => (
+          <span key={contributor.name}>
+            {index > 0 && ' · '}
+            {contributor.link ? (
+              <a
+                href={contributor.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline"
+              >
+                {contributor.name}
+              </a>
+            ) : (
+              contributor.name
+            )}
+          </span>
+        ))}
+      </p>
+    </section>
   );
 }

@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { getCurator } from '@/lib/auth';
 import { calendarPath, getOwnedCalendar, submitPath } from '@/lib/calendars';
-import { getClaims } from '@/lib/curation';
+import { getClaims, participantNames } from '@/lib/curation';
 import { updateCalendarAction } from '@/app/dashboard/actions';
 import { CopyLink } from '@/app/dashboard/CopyLink';
 import { ClaimGrid } from './ClaimGrid';
@@ -28,6 +28,7 @@ export default async function CalendarSettingsPage({ params }: { params: Promise
   ]);
   if (!calendar || !claims) notFound();
   const selfFilled = Boolean(calendar.self_filled);
+  const participants = participantNames(claims.days);
 
   return (
     <main className="min-h-dvh bg-[url('/light.webp')] bg-cover bg-fixed bg-center">
@@ -54,7 +55,7 @@ export default async function CalendarSettingsPage({ params }: { params: Promise
             <p className="text-sm text-zinc-600">
               {selfFilled
                 ? `${claims.claimedCount} of ${claims.days.length} days filled. Click any day to fill it in.`
-                : `${claims.claimedCount} of ${claims.days.length} days claimed. Names are hidden until you ask — contents never.`}
+                : `${claims.claimedCount} of ${claims.days.length} days claimed. Who has which day is hidden until you ask — contents never.`}
             </p>
           </div>
 
@@ -93,6 +94,30 @@ export default async function CalendarSettingsPage({ params }: { params: Promise
               </>
             )}
           </div>
+
+          {/* Who joined, not which Day is theirs: listed alphabetically so the
+              Curator knows who to remind without the grid's names switched on. */}
+          {!selfFilled && (
+            <div className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/95 p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_8px_24px_rgba(0,0,0,.06)]">
+              <span className="font-mono text-[11px] uppercase tracking-wide text-zinc-400">
+                Participants · {participants.length}
+              </span>
+              {participants.length === 0 ? (
+                <p className="text-sm text-zinc-500">Nobody has claimed a day yet.</p>
+              ) : (
+                <ul className="flex flex-wrap gap-1.5">
+                  {participants.map((name) => (
+                    <li
+                      key={name}
+                      className="rounded-full border border-zinc-900/10 bg-zinc-50 px-2.5 py-1 text-sm text-zinc-700"
+                    >
+                      {name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           <form
             action={updateCalendarAction}

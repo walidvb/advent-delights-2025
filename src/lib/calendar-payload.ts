@@ -153,6 +153,10 @@ async function readCalendar(slug: string): Promise<CalendarPayload | null> {
     }
   }
 
+  // Alphabetical, not by Day: who joined is public, which Day is theirs is the
+  // surprise. Rows arrive in Day order, so leaving them would spoil it.
+  contributors.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
   return {
     slug: results[0].slug,
     year: results[0].year,
@@ -180,7 +184,7 @@ function edgeCache(): Cache | null {
  * cached under the old shape is never read back as the new one.
  */
 const cacheKey = (slug: string) =>
-  new Request(`https://calendar-payload.invalid/v4/${encodeURIComponent(slug)}`);
+  new Request(`https://calendar-payload.invalid/v5/${encodeURIComponent(slug)}`);
 
 /**
  * The Calendar at `slug`, from the cache when it is there and from the database
