@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { getCurator } from '@/lib/auth';
 import { calendarPath, getOwnedCalendar, submitPath } from '@/lib/calendars';
-import { getClaims, participantNames } from '@/lib/curation';
+import { getClaims } from '@/lib/curation';
 import { updateCalendarAction } from '@/app/dashboard/actions';
 import { CopyLink } from '@/app/dashboard/CopyLink';
 import { ClaimGrid } from './ClaimGrid';
@@ -28,7 +28,7 @@ export default async function CalendarSettingsPage({ params }: { params: Promise
   ]);
   if (!calendar || !claims) notFound();
   const selfFilled = Boolean(calendar.self_filled);
-  const participants = participantNames(claims.days);
+  const participants = claims.participants;
 
   return (
     <main className="min-h-dvh bg-[url('/light.webp')] bg-cover bg-fixed bg-center">
@@ -95,7 +95,7 @@ export default async function CalendarSettingsPage({ params }: { params: Promise
             )}
           </div>
 
-          {/* Who joined, not which Day is theirs: listed alphabetically so the
+          {/* Who joined, not which Day is theirs: listed newest first, so the
               Curator knows who to remind without the grid's names switched on. */}
           {!selfFilled && (
             <div className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/95 p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_8px_24px_rgba(0,0,0,.06)]">

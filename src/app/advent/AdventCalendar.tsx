@@ -217,7 +217,7 @@ export function AdventCalendar({ year, days, contributors }: AdventCalendarProps
 
 /**
  * Who is in this Calendar, under the grid. Names only, in the payload's
- * alphabetical order — which Day belongs to whom stays behind the doors.
+ * most-recent-first order — which Day belongs to whom stays behind the doors.
  */
 function Participants({ contributors, mood }: { contributors: Contributor[]; mood: string }) {
   const light = mood === 'light';

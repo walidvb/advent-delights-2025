@@ -24,8 +24,21 @@ import { getOwnedCalendar } from './calendars';
 /** One Day of the Curator's grid. No Track content, by construction. */
 export type CuratedDay = { day: number; claimedBy: string | null; claimable: boolean };
 
-/** The claim state of a whole Calendar: the grid, and how many Days are in. */
-export type CalendarClaims = { days: CuratedDay[]; claimedCount: number };
+/**
+ * The claim state of a whole Calendar: the grid, how many Days are in, and who
+ * has joined.
+ */
+export type CalendarClaims = {
+  days: CuratedDay[];
+  claimedCount: number;
+  /**
+   * Everyone who has claimed a Day, once each, most recently submitted first —
+   * never Day order, which would say which Day is whose. Who joined is what a
+   * Curator needs to know who to remind; the Day assigned to each is the part
+   * kept hidden.
+   */
+  participants: string[];
+};
 
 /** What is behind one door. Only ever built by `revealDay`. */
 export type RevealedTrack = {
@@ -61,7 +74,9 @@ export async function getClaims(
   if (!calendar) return null;
 
   const { results } = await (await db())
-    .prepare('select day, credited_to from submissions where calendar_id = ?1')
+    .prepare(
+      'select day, credited_to from submissions where calendar_id = ?1 order by created_at desc',
+    )
     .bind(calendarId)
     .all<{ day: number; credited_to: string }>();
 
@@ -70,22 +85,14 @@ export async function getClaims(
 
   return {
     claimedCount: claimedBy.size,
+    // Newest first already; a Set keeps each name at its latest Submission.
+    participants: [...new Set(results.map((row) => row.credited_to))],
     days: Array.from({ length: DAYS_IN_CALENDAR }, (_, i) => ({
       day: i + 1,
       claimedBy: claimedBy.get(i + 1) ?? null,
       claimable: claimable.has(i + 1),
     })),
   };
-}
-
-/**
- * Everyone who has claimed a Day, once each, in alphabetical order — never Day
- * order, which would say which Day is whose. Who joined is what a Curator needs
- * to know who to remind; the Day assigned to each is the part kept hidden.
- */
-export function participantNames(days: CuratedDay[]): string[] {
-  const names = new Set(days.flatMap((day) => (day.claimedBy ? [day.claimedBy] : [])));
-  return [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 }
 
 /** Who claimed one Day, without saying what they put there. Null if nobody did. */

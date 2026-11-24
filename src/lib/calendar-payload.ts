@@ -72,6 +72,7 @@ type TrackRow = {
   day: number | null;
   credited_to: string | null;
   link: string | null;
+  created_at: number | null;
   variant: string | null;
   url: string | null;
   title: string | null;
@@ -94,7 +95,7 @@ async function readCalendar(slug: string): Promise<CalendarPayload | null> {
   const { env } = await getCloudflareContext({ async: true });
   const [trackResult, variantResult] = await env.DB.batch([
     env.DB.prepare(
-      `select c.slug, c.year, c.is_public, c.self_filled, s.day, s.credited_to, s.link,
+      `select c.slug, c.year, c.is_public, c.self_filled, s.day, s.credited_to, s.link, s.created_at,
               t.variant, t.url, t.title, t.artist, t.description, t.buy_link,
               t.cover_key, t.cover_url, t.provider_track_id, t.stream_url
          from calendars c
@@ -126,8 +127,8 @@ async function readCalendar(slug: string): Promise<CalendarPayload | null> {
     contributorLink: '',
     tracks: {},
   }));
-  const contributors: Contributor[] = [];
-  const seen = new Set<string>();
+  // Each name once, stamped with the latest Submission made under it.
+  const latestByName = new Map<string, { contributor: Contributor; at: number }>();
 
   for (const row of results) {
     if (row.day === null) continue;
@@ -147,15 +148,22 @@ async function readCalendar(slug: string): Promise<CalendarPayload | null> {
         media: media(row),
       };
     }
-    if (day.creditedTo && !seen.has(day.creditedTo)) {
-      seen.add(day.creditedTo);
-      contributors.push({ name: day.creditedTo, link: day.contributorLink });
+    const at = row.created_at ?? 0;
+    const known = latestByName.get(day.creditedTo);
+    if (day.creditedTo && (!known || at > known.at)) {
+      latestByName.set(day.creditedTo, {
+        contributor: { name: day.creditedTo, link: day.contributorLink },
+        at,
+      });
     }
   }
 
-  // Alphabetical, not by Day: who joined is public, which Day is theirs is the
-  // surprise. Rows arrive in Day order, so leaving them would spoil it.
-  contributors.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  // Most recently submitted first, never by Day: who joined is public, which
+  // Day is theirs is the surprise. Rows arrive in Day order, so leaving them
+  // as they come would spoil it.
+  const contributors = [...latestByName.values()]
+    .sort((a, b) => b.at - a.at)
+    .map((entry) => entry.contributor);
 
   return {
     slug: results[0].slug,
@@ -184,7 +192,7 @@ function edgeCache(): Cache | null {
  * cached under the old shape is never read back as the new one.
  */
 const cacheKey = (slug: string) =>
-  new Request(`https://calendar-payload.invalid/v5/${encodeURIComponent(slug)}`);
+  new Request(`https://calendar-payload.invalid/v6/${encodeURIComponent(slug)}`);
 
 /**
  * The Calendar at `slug`, from the cache when it is there and from the database
