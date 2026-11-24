@@ -124,7 +124,8 @@ type Suggestion = Omit<Prefillable, 'url'>;
 
 /**
  * One Track. Paste a link and the title, artist and artwork try to fill
- * themselves in.
+ * themselves in, sliding open at the bottom of the Track once they have a link
+ * to come from.
  *
  * The prefill is a suggestion and never the source of truth: what gets saved is
  * whatever is in these inputs when the form is submitted. Nothing is ever
@@ -160,6 +161,12 @@ export function TrackFields({
   // form it has been looked up once, months ago, and answered.
   const settled = useRef(values.url.trim());
   const [looking, setLooking] = useState(false);
+  /**
+   * Whether the looked-up fields are showing. They open once there is a link
+   * settled enough to look up, whatever the lookup then says — an unknown
+   * source still needs a name and an artist, typed by hand — and stay open.
+   */
+  const [open, setOpen] = useState(values.url.trim() !== '');
   const [problem, setProblem] = useState('');
   /** Bandcamp only: the release's tracks, and which one this Track is. */
   const [release, setRelease] = useState<ReleaseTrack[]>([]);
@@ -184,6 +191,7 @@ export function TrackFields({
     let live = true;
     const timer = setTimeout(async () => {
       settled.current = url;
+      setOpen(true);
       setLooking(true);
       const found = await lookupTrackAction(url).catch(() => null);
       if (!live) return;
@@ -285,6 +293,8 @@ export function TrackFields({
         required
         value={values.url}
         onChange={set('url')}
+        // Leaving the field is as settled as a link gets; no need to wait out the pause.
+        onBlur={() => values.url.trim() && setOpen(true)}
         placeholder="bandcamp.com/track/…, soundcloud.com/… or youtube.com/watch?v=…"
         className={field}
       />
@@ -295,120 +305,10 @@ export function TrackFields({
         {looking
           ? 'Looking up the track…'
           : problem ||
-            'Paste a Bandcamp, SoundCloud or YouTube link and the name, artist and artwork fill themselves in. Correct the name or artist if they get it wrong.'}
+            'Paste a Bandcamp, SoundCloud or YouTube link and the name, artist and artwork fill themselves in below. Correct the name or artist if they get it wrong.'}
       </p>
 
       <TrackPreview url={values.url} streamUrl={previewStream} />
-
-      {release.length > 1 ? (
-        <>
-          <label htmlFor={`${variant}.provider_track_id`} className="text-sm">
-            Which track on the release
-          </label>
-          <select
-            id={`${variant}.provider_track_id`}
-            name={`${variant}.provider_track_id`}
-            value={trackId}
-            onChange={(event) => chooseTrack(event.target.value)}
-            className={field}
-          >
-            {release.map((t, i) => (
-              // A track you have to buy to hear can't be played in the Calendar.
-              <option key={t.id} value={t.id} disabled={!t.playable}>
-                {i + 1}. {t.title}
-                {t.playable ? '' : ' (not streamable)'}
-              </option>
-            ))}
-          </select>
-        </>
-      ) : (
-        <input type="hidden" name={`${variant}.provider_track_id`} value={trackId} />
-      )}
-
-      <label htmlFor={`${variant}.title`} className="text-sm">
-        Track name
-      </label>
-      <input
-        id={`${variant}.title`}
-        name={`${variant}.title`}
-        required
-        maxLength={200}
-        value={values.title}
-        onChange={set('title')}
-        className={field}
-      />
-
-      <label htmlFor={`${variant}.artist`} className="text-sm">
-        Artist
-      </label>
-      <input
-        id={`${variant}.artist`}
-        name={`${variant}.artist`}
-        required
-        maxLength={200}
-        value={values.artist}
-        onChange={set('artist')}
-        className={field}
-      />
-
-      <span className="text-sm">Cover image {optional}</span>
-      {/* Filled from the link only; there is nothing here to type into. */}
-      <input type="hidden" name={`${variant}.cover_url`} value={values.coverUrl} />
-      {values.coverUrl && (
-        // eslint-disable-next-line @next/next/no-img-element -- somebody else's host, and only a preview.
-        <img
-          src={values.coverUrl}
-          alt=""
-          // Dimmed while an upload is in charge, because that is what shows.
-          className={`h-16 w-16 shrink-0 rounded-md border border-border object-cover ${
-            cover.key ? 'opacity-30' : ''
-          }`}
-        />
-      )}
-
-      <div className="flex items-start gap-3">
-        <div className="flex min-w-0 flex-col gap-2">
-          <input
-            type="file"
-            accept={Object.keys(COVER_TYPES).join(',')}
-            onChange={chooseCover}
-            aria-label={`Upload a cover image for the ${label.toLowerCase()} track`}
-            className="max-w-full text-sm file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-2 file:text-sm"
-          />
-          {cover.key && (
-            <button
-              type="button"
-              onClick={() => setCover({ key: '', busy: false, error: '' })}
-              className="self-start text-xs underline"
-            >
-              Remove this upload
-            </button>
-          )}
-        </div>
-        {cover.key && (
-          // The preview is the stored object served back through `/cover/`, so
-          // what is on screen is exactly what the Calendar will show.
-          // eslint-disable-next-line @next/next/no-img-element -- an upload of unknown shape, and only a preview.
-          <img
-            src={coverPath(cover.key)}
-            alt=""
-            className="h-16 w-16 shrink-0 rounded-md border border-primary object-cover"
-          />
-        )}
-      </div>
-      <p
-        className={`-mt-1 text-xs ${cover.error ? 'text-destructive' : 'text-muted-foreground'}`}
-        role={cover.error ? 'alert' : 'status'}
-      >
-        {cover.error ||
-          (cover.busy
-            ? 'Shrinking and uploading your image…'
-            : cover.key
-              ? 'Your upload is what the Calendar will show. Remove it and the image above comes back.'
-              : 'Or upload your own — JPEG, PNG or WebP under 5MB. It is shrunk on your device before it is sent, and it wins over the one above.')}
-      </p>
-      {/* The key of what was uploaded, carried with the rest of the answers. */}
-      <input type="hidden" name={`${variant}.cover_key`} value={cover.key} />
 
       <label htmlFor={`${variant}.description`} className="text-sm">
         Why you chose it
@@ -433,6 +333,132 @@ export function TrackFields({
         placeholder="https://artist.bandcamp.com/track/…"
         className={field}
       />
+      {/*
+        Everything the lookup fills in, kept out of sight until there is a link
+        to fill it from, and last so that sliding open never shoves the fields
+        a Contributor is already typing into. Mounted the whole time, so its
+        values are always part of the form.
+      */}
+      <div
+        inert={!open}
+        className={`grid transition-[grid-template-rows,margin] duration-300 ease-out motion-reduce:transition-none ${
+          open ? 'grid-rows-[1fr]' : '-mt-3 grid-rows-[0fr]'
+        }`}
+      >
+        {/* Padded sideways so the clip doesn't eat the inputs' focus rings. */}
+        <div className="-mx-1 flex min-h-0 flex-col gap-3 overflow-hidden px-1">
+          {release.length > 1 ? (
+            <>
+              <label htmlFor={`${variant}.provider_track_id`} className="text-sm">
+                Which track on the release
+              </label>
+              <select
+                id={`${variant}.provider_track_id`}
+                name={`${variant}.provider_track_id`}
+                value={trackId}
+                onChange={(event) => chooseTrack(event.target.value)}
+                className={field}
+              >
+                {release.map((t, i) => (
+                  // A track you have to buy to hear can't be played in the Calendar.
+                  <option key={t.id} value={t.id} disabled={!t.playable}>
+                    {i + 1}. {t.title}
+                    {t.playable ? '' : ' (not streamable)'}
+                  </option>
+                ))}
+              </select>
+            </>
+          ) : (
+            <input type="hidden" name={`${variant}.provider_track_id`} value={trackId} />
+          )}
+
+          <label htmlFor={`${variant}.title`} className="text-sm">
+            Track name
+          </label>
+          <input
+            id={`${variant}.title`}
+            name={`${variant}.title`}
+            required
+            maxLength={200}
+            value={values.title}
+            onChange={set('title')}
+            className={field}
+          />
+
+          <label htmlFor={`${variant}.artist`} className="text-sm">
+            Artist
+          </label>
+          <input
+            id={`${variant}.artist`}
+            name={`${variant}.artist`}
+            required
+            maxLength={200}
+            value={values.artist}
+            onChange={set('artist')}
+            className={field}
+          />
+
+          <span className="text-sm">Cover image {optional}</span>
+          {/* Filled from the link only; there is nothing here to type into. */}
+          <input type="hidden" name={`${variant}.cover_url`} value={values.coverUrl} />
+          {values.coverUrl && (
+            // eslint-disable-next-line @next/next/no-img-element -- somebody else's host, and only a preview.
+            <img
+              src={values.coverUrl}
+              alt=""
+              // Dimmed while an upload is in charge, because that is what shows.
+              className={`h-16 w-16 shrink-0 rounded-md border border-border object-cover ${
+                cover.key ? 'opacity-30' : ''
+              }`}
+            />
+          )}
+
+          <div className="flex items-start gap-3">
+            <div className="flex min-w-0 flex-col gap-2">
+              <input
+                type="file"
+                accept={Object.keys(COVER_TYPES).join(',')}
+                onChange={chooseCover}
+                aria-label={`Upload a cover image for the ${label.toLowerCase()} track`}
+                className="max-w-full text-sm file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-2 file:text-sm"
+              />
+              {cover.key && (
+                <button
+                  type="button"
+                  onClick={() => setCover({ key: '', busy: false, error: '' })}
+                  className="self-start text-xs underline"
+                >
+                  Remove this upload
+                </button>
+              )}
+            </div>
+            {cover.key && (
+              // The preview is the stored object served back through `/cover/`, so
+              // what is on screen is exactly what the Calendar will show.
+              // eslint-disable-next-line @next/next/no-img-element -- an upload of unknown shape, and only a preview.
+              <img
+                src={coverPath(cover.key)}
+                alt=""
+                className="h-16 w-16 shrink-0 rounded-md border border-primary object-cover"
+              />
+            )}
+          </div>
+          <p
+            className={`-mt-1 text-xs ${cover.error ? 'text-destructive' : 'text-muted-foreground'}`}
+            role={cover.error ? 'alert' : 'status'}
+          >
+            {cover.error ||
+              (cover.busy
+                ? 'Shrinking and uploading your image…'
+                : cover.key
+                  ? 'Your upload is what the Calendar will show. Remove it and the image above comes back.'
+                  : 'Or upload your own — JPEG, PNG or WebP under 5MB. It is shrunk on your device before it is sent, and it wins over the one above.')}
+          </p>
+          {/* The key of what was uploaded, carried with the rest of the answers. */}
+          <input type="hidden" name={`${variant}.cover_key`} value={cover.key} />
+
+        </div>
+      </div>
     </fieldset>
   );
 }
