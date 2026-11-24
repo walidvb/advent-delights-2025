@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { Check, Pencil } from 'lucide-react';
 import { lookupTrackAction, uploadCoverAction } from './actions';
 import { TrackPreview } from './TrackPreview';
 import { COVER_TYPES, coverPath, coverProblem, resizeCover } from '@/lib/covers';
@@ -162,11 +163,17 @@ export function TrackFields({
   const settled = useRef(values.url.trim());
   const [looking, setLooking] = useState(false);
   /**
-   * Whether the looked-up fields are showing. They open once there is a link
-   * settled enough to look up, whatever the lookup then says — an unknown
-   * source still needs a name and an artist, typed by hand — and stay open.
+   * Whether the looked-up artwork is showing. It opens once there is a link
+   * settled enough to look up, whatever the lookup then says, and stays open.
    */
   const [open, setOpen] = useState(values.url.trim() !== '');
+  const hasNames = Boolean(values.title.trim() && values.artist.trim());
+  /**
+   * Whether the name and artist are inputs rather than text in the player.
+   * Sticky once on: it switches itself on when the lookup leaves them to be
+   * typed, and an input must not vanish the moment its first letter lands.
+   */
+  const [editing, setEditing] = useState(open && !hasNames);
   const [problem, setProblem] = useState('');
   /** Bandcamp only: the release's tracks, and which one this Track is. */
   const [release, setRelease] = useState<ReleaseTrack[]>([]);
@@ -199,7 +206,10 @@ export function TrackFields({
       setProblem(found && 'problem' in found ? found.problem : '');
       const tracks = found && 'tracks' in found ? (found.tracks ?? []) : [];
       setRelease(tracks);
-      if (!found || 'problem' in found) return setTrackId('');
+      if (!found || 'problem' in found) {
+        setEditing(true);
+        return setTrackId('');
+      }
 
       // Keep the stored track if this is still its release; otherwise whichever
       // one Bandcamp's own page starts on.
@@ -207,7 +217,10 @@ export function TrackFields({
       const id = tracks.some((t) => t.id === stored && t.playable) ? stored! : (found.trackId ?? '');
       setTrackId(id);
       const picked = tracks.find((t) => t.id === id);
-      suggest({ ...found, title: picked?.title ?? found.title, artist: picked?.artist ?? found.artist });
+      const title = picked?.title ?? found.title;
+      const artist = picked?.artist ?? found.artist;
+      if (!title || !artist) setEditing(true);
+      suggest({ ...found, title, artist });
     }, SETTLE_MS);
 
     return () => {
@@ -293,8 +306,6 @@ export function TrackFields({
         required
         value={values.url}
         onChange={set('url')}
-        // Leaving the field is as settled as a link gets; no need to wait out the pause.
-        onBlur={() => values.url.trim() && setOpen(true)}
         placeholder="bandcamp.com/track/…, soundcloud.com/… or youtube.com/watch?v=…"
         className={field}
       />
@@ -305,10 +316,102 @@ export function TrackFields({
         {looking
           ? 'Looking up the track…'
           : problem ||
-            'Paste a Bandcamp, SoundCloud or YouTube link and the name, artist and artwork fill themselves in below. Correct the name or artist if they get it wrong.'}
+            'Paste a Bandcamp, SoundCloud or YouTube link and the name, artist and artwork fill themselves in. Use the pen to correct the name or artist if they get it wrong.'}
       </p>
 
-      <TrackPreview url={values.url} streamUrl={previewStream} />
+      {release.length > 1 ? (
+        <>
+          <label htmlFor={`${variant}.provider_track_id`} className="text-sm">
+            Which track on the release
+          </label>
+          <select
+            id={`${variant}.provider_track_id`}
+            name={`${variant}.provider_track_id`}
+            value={trackId}
+            onChange={(event) => chooseTrack(event.target.value)}
+            className={field}
+          >
+            {release.map((t, i) => (
+              // A track you have to buy to hear can't be played in the Calendar.
+              <option key={t.id} value={t.id} disabled={!t.playable}>
+                {i + 1}. {t.title}
+                {t.playable ? '' : ' (not streamable)'}
+              </option>
+            ))}
+          </select>
+        </>
+      ) : (
+        <input type="hidden" name={`${variant}.provider_track_id`} value={trackId} />
+      )}
+
+      {/*
+        The name and artist ride in the player, as text with a pen to correct
+        them, or as inputs when there is something to type. Either way they are
+        the values the form sends.
+      */}
+      <TrackPreview url={values.url} streamUrl={previewStream}>
+        {editing ? (
+          <div className="flex items-end gap-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <label htmlFor={`${variant}.title`} className="text-sm">
+                Track name
+              </label>
+              <input
+                id={`${variant}.title`}
+                name={`${variant}.title`}
+                required
+                maxLength={200}
+                value={values.title}
+                onChange={set('title')}
+                className={field}
+              />
+              <label htmlFor={`${variant}.artist`} className="text-sm">
+                Artist
+              </label>
+              <input
+                id={`${variant}.artist`}
+                name={`${variant}.artist`}
+                required
+                maxLength={200}
+                value={values.artist}
+                onChange={set('artist')}
+                className={field}
+              />
+            </div>
+            {hasNames && (
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                aria-label="Done editing the name and artist"
+                className="shrink-0 rounded-md p-2 hover:bg-accent"
+              >
+                <Check className="h-4 w-4" aria-hidden />
+              </button>
+            )}
+          </div>
+        ) : hasNames ? (
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1 break-words">
+              <p className="font-medium leading-snug">{values.title}</p>
+              <p className="text-sm leading-snug text-muted-foreground">{values.artist}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              aria-label="Edit the name and artist"
+              className="-m-1 shrink-0 rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              <Pencil className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+        ) : null}
+      </TrackPreview>
+      {!editing && (
+        <>
+          <input type="hidden" name={`${variant}.title`} value={values.title} />
+          <input type="hidden" name={`${variant}.artist`} value={values.artist} />
+        </>
+      )}
 
       <label htmlFor={`${variant}.description`} className="text-sm">
         Why you chose it
@@ -334,8 +437,8 @@ export function TrackFields({
         className={field}
       />
       {/*
-        Everything the lookup fills in, kept out of sight until there is a link
-        to fill it from, and last so that sliding open never shoves the fields
+        The artwork the lookup fills in, kept out of sight until there is a
+        link to fill it from, and last so that sliding open never shoves the fields
         a Contributor is already typing into. Mounted the whole time, so its
         values are always part of the form.
       */}
@@ -347,57 +450,6 @@ export function TrackFields({
       >
         {/* Padded sideways so the clip doesn't eat the inputs' focus rings. */}
         <div className="-mx-1 flex min-h-0 flex-col gap-3 overflow-hidden px-1">
-          {release.length > 1 ? (
-            <>
-              <label htmlFor={`${variant}.provider_track_id`} className="text-sm">
-                Which track on the release
-              </label>
-              <select
-                id={`${variant}.provider_track_id`}
-                name={`${variant}.provider_track_id`}
-                value={trackId}
-                onChange={(event) => chooseTrack(event.target.value)}
-                className={field}
-              >
-                {release.map((t, i) => (
-                  // A track you have to buy to hear can't be played in the Calendar.
-                  <option key={t.id} value={t.id} disabled={!t.playable}>
-                    {i + 1}. {t.title}
-                    {t.playable ? '' : ' (not streamable)'}
-                  </option>
-                ))}
-              </select>
-            </>
-          ) : (
-            <input type="hidden" name={`${variant}.provider_track_id`} value={trackId} />
-          )}
-
-          <label htmlFor={`${variant}.title`} className="text-sm">
-            Track name
-          </label>
-          <input
-            id={`${variant}.title`}
-            name={`${variant}.title`}
-            required
-            maxLength={200}
-            value={values.title}
-            onChange={set('title')}
-            className={field}
-          />
-
-          <label htmlFor={`${variant}.artist`} className="text-sm">
-            Artist
-          </label>
-          <input
-            id={`${variant}.artist`}
-            name={`${variant}.artist`}
-            required
-            maxLength={200}
-            value={values.artist}
-            onChange={set('artist')}
-            className={field}
-          />
-
           <span className="text-sm">Cover image {optional}</span>
           {/* Filled from the link only; there is nothing here to type into. */}
           <input type="hidden" name={`${variant}.cover_url`} value={values.coverUrl} />
