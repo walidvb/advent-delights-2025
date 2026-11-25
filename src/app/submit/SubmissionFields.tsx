@@ -125,8 +125,8 @@ type Suggestion = Omit<Prefillable, 'url'>;
 
 /**
  * One Track. Paste a link and the title, artist and artwork try to fill
- * themselves in, sliding open at the bottom of the Track once they have a link
- * to come from.
+ * themselves in, showing in the Track's player once they have a link to come
+ * from. The pen there turns them into inputs, and the cover into an upload.
  *
  * The prefill is a suggestion and never the source of truth: what gets saved is
  * whatever is in these inputs when the form is submitted. Nothing is ever
@@ -162,18 +162,13 @@ export function TrackFields({
   // form it has been looked up once, months ago, and answered.
   const settled = useRef(values.url.trim());
   const [looking, setLooking] = useState(false);
-  /**
-   * Whether the looked-up artwork is showing. It opens once there is a link
-   * settled enough to look up, whatever the lookup then says, and stays open.
-   */
-  const [open, setOpen] = useState(values.url.trim() !== '');
   const hasNames = Boolean(values.title.trim() && values.artist.trim());
   /**
-   * Whether the name and artist are inputs rather than text in the player.
+   * Whether the name, artist and cover are inputs rather than what the player shows.
    * Sticky once on: it switches itself on when the lookup leaves them to be
    * typed, and an input must not vanish the moment its first letter lands.
    */
-  const [editing, setEditing] = useState(open && !hasNames);
+  const [editing, setEditing] = useState(values.url.trim() !== '' && !hasNames);
   const [problem, setProblem] = useState('');
   /** Bandcamp only: the release's tracks, and which one this Track is. */
   const [release, setRelease] = useState<ReleaseTrack[]>([]);
@@ -198,7 +193,6 @@ export function TrackFields({
     let live = true;
     const timer = setTimeout(async () => {
       settled.current = url;
-      setOpen(true);
       setLooking(true);
       const found = await lookupTrackAction(url).catch(() => null);
       if (!live) return;
@@ -316,7 +310,7 @@ export function TrackFields({
         {looking
           ? 'Looking up the track…'
           : problem ||
-            'Paste a Bandcamp, SoundCloud or YouTube link and the name, artist and artwork fill themselves in. Use the pen to correct the name or artist if they get it wrong.'}
+            'Paste a Bandcamp, SoundCloud or YouTube link and the name, artist and artwork fill themselves in. Use the pen to correct the name, artist or cover if they get it wrong.'}
       </p>
 
       {release.length > 1 ? (
@@ -345,13 +339,17 @@ export function TrackFields({
       )}
 
       {/*
-        The name and artist ride in the player, as text with a pen to correct
+        The name, artist and cover ride in the player, with a pen to correct
         them, or as inputs when there is something to type. Either way they are
-        the values the form sends.
+        the values the form sends. An upload wins over the looked-up artwork.
       */}
-      <TrackPreview url={values.url} streamUrl={previewStream}>
+      <TrackPreview
+        url={values.url}
+        streamUrl={previewStream}
+        cover={cover.key ? coverPath(cover.key) : values.coverUrl || undefined}
+      >
         {editing ? (
-          <div className="flex items-end gap-2">
+          <div className="flex items-start gap-2">
             <div className="flex min-w-0 flex-1 flex-col gap-2">
               <label htmlFor={`${variant}.title`} className="text-sm">
                 Track name
@@ -377,13 +375,41 @@ export function TrackFields({
                 onChange={set('artist')}
                 className={field}
               />
+              <span className="text-sm">Cover image {optional}</span>
+              <input
+                type="file"
+                accept={Object.keys(COVER_TYPES).join(',')}
+                onChange={chooseCover}
+                aria-label={`Upload a cover image for the ${label.toLowerCase()} track`}
+                className="max-w-full text-sm file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-2 file:text-sm"
+              />
+              {cover.key && (
+                <button
+                  type="button"
+                  onClick={() => setCover({ key: '', busy: false, error: '' })}
+                  className="self-start text-xs underline"
+                >
+                  Remove this upload
+                </button>
+              )}
+              <p
+                className={`-mt-1 text-xs ${cover.error ? 'text-destructive' : 'text-muted-foreground'}`}
+                role={cover.error ? 'alert' : 'status'}
+              >
+                {cover.error ||
+                  (cover.busy
+                    ? 'Shrinking and uploading your image…'
+                    : cover.key
+                      ? 'Your upload is what the Calendar will show. Remove it to go back to the artwork from the link.'
+                      : 'JPEG, PNG or WebP under 5MB, shrunk on your device before it is sent. It wins over the artwork from the link.')}
+              </p>
             </div>
             {hasNames && (
               <button
                 type="button"
                 onClick={() => setEditing(false)}
-                aria-label="Done editing the name and artist"
-                className="shrink-0 rounded-md p-2 hover:bg-accent"
+                aria-label="Done editing the name, artist and cover"
+                className="-m-1 shrink-0 rounded-md p-1 hover:bg-accent"
               >
                 <Check className="h-4 w-4" aria-hidden />
               </button>
@@ -398,7 +424,7 @@ export function TrackFields({
             <button
               type="button"
               onClick={() => setEditing(true)}
-              aria-label="Edit the name and artist"
+              aria-label="Edit the name, artist and cover"
               className="-m-1 shrink-0 rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               <Pencil className="h-4 w-4" aria-hidden />
@@ -412,6 +438,10 @@ export function TrackFields({
           <input type="hidden" name={`${variant}.artist`} value={values.artist} />
         </>
       )}
+      {/* Filled from the link only; there is nothing here to type into. */}
+      <input type="hidden" name={`${variant}.cover_url`} value={values.coverUrl} />
+      {/* The key of what was uploaded, carried with the rest of the answers. */}
+      <input type="hidden" name={`${variant}.cover_key`} value={cover.key} />
 
       <label htmlFor={`${variant}.description`} className="text-sm">
         Why you chose it
@@ -436,81 +466,6 @@ export function TrackFields({
         placeholder="https://artist.bandcamp.com/track/…"
         className={field}
       />
-      {/*
-        The artwork the lookup fills in, kept out of sight until there is a
-        link to fill it from, and last so that sliding open never shoves the fields
-        a Contributor is already typing into. Mounted the whole time, so its
-        values are always part of the form.
-      */}
-      <div
-        inert={!open}
-        className={`grid transition-[grid-template-rows,margin] duration-300 ease-out motion-reduce:transition-none ${
-          open ? 'grid-rows-[1fr]' : '-mt-3 grid-rows-[0fr]'
-        }`}
-      >
-        {/* Padded sideways so the clip doesn't eat the inputs' focus rings. */}
-        <div className="-mx-1 flex min-h-0 flex-col gap-3 overflow-hidden px-1">
-          <span className="text-sm">Cover image {optional}</span>
-          {/* Filled from the link only; there is nothing here to type into. */}
-          <input type="hidden" name={`${variant}.cover_url`} value={values.coverUrl} />
-          {values.coverUrl && (
-            // eslint-disable-next-line @next/next/no-img-element -- somebody else's host, and only a preview.
-            <img
-              src={values.coverUrl}
-              alt=""
-              // Dimmed while an upload is in charge, because that is what shows.
-              className={`h-16 w-16 shrink-0 rounded-md border border-border object-cover ${
-                cover.key ? 'opacity-30' : ''
-              }`}
-            />
-          )}
-
-          <div className="flex items-start gap-3">
-            <div className="flex min-w-0 flex-col gap-2">
-              <input
-                type="file"
-                accept={Object.keys(COVER_TYPES).join(',')}
-                onChange={chooseCover}
-                aria-label={`Upload a cover image for the ${label.toLowerCase()} track`}
-                className="max-w-full text-sm file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-2 file:text-sm"
-              />
-              {cover.key && (
-                <button
-                  type="button"
-                  onClick={() => setCover({ key: '', busy: false, error: '' })}
-                  className="self-start text-xs underline"
-                >
-                  Remove this upload
-                </button>
-              )}
-            </div>
-            {cover.key && (
-              // The preview is the stored object served back through `/cover/`, so
-              // what is on screen is exactly what the Calendar will show.
-              // eslint-disable-next-line @next/next/no-img-element -- an upload of unknown shape, and only a preview.
-              <img
-                src={coverPath(cover.key)}
-                alt=""
-                className="h-16 w-16 shrink-0 rounded-md border border-primary object-cover"
-              />
-            )}
-          </div>
-          <p
-            className={`-mt-1 text-xs ${cover.error ? 'text-destructive' : 'text-muted-foreground'}`}
-            role={cover.error ? 'alert' : 'status'}
-          >
-            {cover.error ||
-              (cover.busy
-                ? 'Shrinking and uploading your image…'
-                : cover.key
-                  ? 'Your upload is what the Calendar will show. Remove it and the image above comes back.'
-                  : 'Or upload your own — JPEG, PNG or WebP under 5MB. It is shrunk on your device before it is sent, and it wins over the one above.')}
-          </p>
-          {/* The key of what was uploaded, carried with the rest of the answers. */}
-          <input type="hidden" name={`${variant}.cover_key`} value={cover.key} />
-
-        </div>
-      </div>
     </fieldset>
   );
 }

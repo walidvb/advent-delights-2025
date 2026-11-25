@@ -10,16 +10,20 @@ import { MediaEngine, type Progress } from '@cucu/media/react';
  * plays it with. Shows only for a source the Calendar knows how to play, and
  * for Bandcamp only once the lookup has handed back a stream.
  *
- * Whatever it is given to show — the name and artist — sits beside the button,
- * and still shows on its own for a link there is nothing to play from.
+ * The cover, when there is one, is the button: the play icon sits on top of
+ * it. Whatever else it is given to show — the name and artist — sits beside
+ * it, and both still show on their own for a link there is nothing to play
+ * from.
  */
 export function TrackPreview({
   url,
   streamUrl,
+  cover,
   children,
 }: {
   url: string;
   streamUrl: string | null;
+  cover?: string;
   children?: ReactNode;
 }) {
   const provider = detectProvider(url);
@@ -33,8 +37,19 @@ export function TrackPreview({
   // A new link stops the old one rather than playing on into it.
   if (state.key !== key) setState({ key, playing: false, played: 0, failed: false });
 
+  const artwork = cover ? (
+    // eslint-disable-next-line @next/next/no-img-element -- somebody else's host or an upload, and only a preview.
+    <img src={cover} alt="" className="absolute inset-0 h-full w-full rounded-md object-cover" />
+  ) : null;
+
   if (!media) {
-    return children ? <div className="rounded-md border border-border px-3 py-2">{children}</div> : null;
+    if (!children && !artwork) return null;
+    return (
+      <div className="flex items-start gap-3 rounded-md border border-border px-3 py-2">
+        {artwork && <span className="relative h-16 w-16 shrink-0">{artwork}</span>}
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
+    );
   }
 
   return (
@@ -50,11 +65,14 @@ export function TrackPreview({
         type="button"
         onClick={() => setState((s) => ({ ...s, playing: !s.playing, failed: false }))}
         aria-label={state.playing ? 'Pause the preview' : 'Play a preview'}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+        className={`relative flex shrink-0 items-center justify-center ${artwork ? 'h-16 w-16' : 'h-8 w-8'}`}
       >
-        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-          <path d={state.playing ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z'} />
-        </svg>
+        {artwork}
+        <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow">
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <path d={state.playing ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z'} />
+          </svg>
+        </span>
       </button>
       <div className="flex min-h-8 min-w-0 flex-1 flex-col justify-center gap-2">
         {children}
