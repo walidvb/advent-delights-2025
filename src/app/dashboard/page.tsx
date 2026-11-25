@@ -88,20 +88,34 @@ export default async function DashboardPage({
               <li key={calendar.id}>
                 <Link
                   href={`/dashboard/calendar/${calendar.id}`}
-                  className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/90 p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_8px_24px_rgba(0,0,0,.06)] transition-shadow hover:shadow-[0_2px_4px_rgba(0,0,0,.06),0_14px_34px_rgba(0,0,0,.10)] sm:flex-row sm:items-center sm:justify-between sm:gap-8"
+                  className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/90 p-5 shadow-[0_1px_2px_rgba(0,0,0,.04),0_8px_24px_rgba(0,0,0,.06)] transition-shadow hover:shadow-[0_2px_4px_rgba(0,0,0,.06),0_14px_34px_rgba(0,0,0,.10)]"
                 >
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-lg font-medium">
-                      {calendar.name} <span className="text-sm text-zinc-500">{calendar.year}</span>
-                    </span>
-                    <span className="text-sm text-zinc-500">
-                      {calendar.claimedCount} of 25 claimed ·{' '}
-                      {calendar.is_public ? 'Public' : 'Private'}
-                    </span>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-lg font-medium">
+                        {calendar.name} <span className="text-sm text-zinc-500">{calendar.year}</span>
+                      </span>
+                      <span className="text-sm text-zinc-500">
+                        {calendar.claimedCount} of 25 claimed ·{' '}
+                        {calendar.is_public ? 'Public' : 'Private'}
+                      </span>
+                    </div>
+                    <div className="w-full max-w-[220px] shrink-0">
+                      <Occupancy total={25} opened={0} claimed={calendar.claimedCount} />
+                    </div>
                   </div>
-                  <div className="w-full max-w-[220px] shrink-0">
-                    <Occupancy total={25} opened={0} claimed={calendar.claimedCount} />
-                  </div>
+                  {!calendar.self_filled && calendar.participants.length > 0 && (
+                    <ul className="flex flex-wrap gap-1.5">
+                      {calendar.participants.map((name) => (
+                        <li
+                          key={name}
+                          className="rounded-full border border-zinc-900/10 bg-zinc-50 px-2.5 py-1 text-sm text-zinc-700"
+                        >
+                          {name}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </Link>
               </li>
             ))}

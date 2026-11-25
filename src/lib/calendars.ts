@@ -27,7 +27,11 @@ export type Calendar = {
 };
 
 /** A Calendar plus how many Days have a Submission, for the list's dot-grid. */
-export type CalendarWithCount = Calendar & { claimedCount: number };
+export type CalendarWithCount = Calendar & {
+  claimedCount: number;
+  /** Who has submitted, most recent first, each name once. Never which Day is whose. */
+  participants: string[];
+};
 
 /**
  * How many Tracks a Day holds, chosen when the Calendar is created and fixed
@@ -207,8 +211,32 @@ export async function listCalendars(curatorId: string): Promise<CalendarWithCoun
         order by c.created_at`,
     )
     .bind(curatorId)
-    .all<CalendarWithCount>();
-  return results;
+    .all<Omit<CalendarWithCount, 'participants'>>();
+
+  // Name only, newest first: no day or tracks column, so the dashboard can't spoil anything.
+  const { results: submissions } = await (await db())
+    .prepare(
+      `select s.calendar_id, s.credited_to
+         from submissions s
+         join calendars c on c.id = s.calendar_id
+        where c.curator_id = ?1
+        order by s.created_at desc`,
+    )
+    .bind(curatorId)
+    .all<{ calendar_id: string; credited_to: string }>();
+
+  // A Set keeps each name at its latest Submission.
+  const participants = new Map<string, Set<string>>();
+  for (const row of submissions) {
+    const names = participants.get(row.calendar_id) ?? new Set<string>();
+    names.add(row.credited_to);
+    participants.set(row.calendar_id, names);
+  }
+
+  return results.map((calendar) => ({
+    ...calendar,
+    participants: [...(participants.get(calendar.id) ?? [])],
+  }));
 }
 
 /**
